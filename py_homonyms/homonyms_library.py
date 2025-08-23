@@ -18,7 +18,10 @@ class HomonymsLibrary:
     """
 
     def __init__(self):
-        pass
+        self.homograph_groups: List[Set[str]] = self._load_homographs()
+        self.homophone_groups: List[Set[str]] = self._load_homophones()
+        self.word_to_homographs: Dict[str, Set[str]] = self._build_reverse_index(self.homograph_groups)
+        self.word_to_homophones: Dict[str, Set[str]] = self._build_reverse_index(self.homophone_groups)
 
     def _load_homographs(self) -> List[Set[str]]:
         pass
