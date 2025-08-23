@@ -28,10 +28,84 @@ class HomonymsLibrary:
         )
 
     def _load_homographs(self) -> List[Set[str]]:
-        pass
+        """Load homograph groups (words with same spelling, but different meanings)"""
+        homographs: List[Set[str]] = [
+            {"bank", "bank"},  # financial institution vs river bank
+            {"bark", "bark"},  # dog sound vs tree covering
+            {"bat", "bat"},  # animal vs sports equipment
+            {"bear", "bear"},  # animal vs to carry
+            {"bow", "bow"},  # weapon vs to bend
+            {"close", "close"},  # near vs to shut
+            {"dove", "dove"},  # bird vs past tense of dive
+            {"fair", "fair"},  # just vs carnival
+            {"lead", "lead"},  # metal vs to guide
+            {"live", "live"},  # to exist vs in real time
+            {"minute", "minute"},  # time unit vs very small
+            {"object", "object"},  # thing vs to protest
+            {"perfect", "perfect"},  # flawless vs to make perfect
+            {"present", "present"},  # gift vs current time vs to show
+            {"produce", "produce"},  # to create vs fruits/vegetables
+            {"project", "project"},  # plan vs to extend outward
+            {"read", "read"},  # present vs past tense
+            {"record", "record"},  # to capture vs a disc/document
+            {"refuse", "refuse"},  # to decline vs garbage
+            {"subject", "subject"},  # topic vs to cause to experience
+            {"tear", "tear"},  # to rip vs from crying
+            {"wind", "wind"},  # air movement vs to turn
+            {"wound", "wound"},  # injury vs past tense of wind
+        ]
+        return homographs
 
     def _load_homophones(self) -> List[Set[str]]:
-        pass
+        """Load homophone groups (words that sound alike, but are spelled differently)"""
+        # Common English homophones
+        homophones = [
+            {"to", "too", "two"},
+            {"there", "their", "they're"},
+            {"hear", "here"},
+            {"see", "sea", "c"},
+            {"right", "write", "rite"},
+            {"know", "no"},
+            {"one", "won"},
+            {"four", "for", "fore"},
+            {"eight", "ate"},
+            {"buy", "by", "bye"},
+            {"cell", "sell"},
+            {"dear", "deer"},
+            {"flour", "flower"},
+            {"hole", "whole"},
+            {"knight", "night"},
+            {"mail", "male"},
+            {"pale", "pail"},
+            {"peace", "piece"},
+            {"plain", "plane"},
+            {"rain", "reign", "rein"},
+            {"road", "rode"},
+            {"sail", "sale"},
+            {"son", "sun"},
+            {"tail", "tale"},
+            {"wait", "weight"},
+            {"weak", "week"},
+            {"wear", "where"},
+            {"wood", "would"},
+            {"your", "you're"},
+            {"break", "brake"},
+            {"cent", "scent", "sent"},
+            {"cite", "sight", "site"},
+            {"fair", "fare"},
+            {"flea", "flee"},
+            {"grown", "groan"},
+            {"heal", "heel"},
+            {"meat", "meet"},
+            {"pair", "pear"},
+            {"principal", "principle"},
+            {"roll", "role"},
+            {"steal", "steel"},
+            {"threw", "through"},
+            {"tied", "tide"},
+            {"waste", "waist"},
+        ]
+        return homophones
 
     def _build_reverse_index(self, groups: List[Set[str]]) -> Dict[str, Set[str]]:
         pass
