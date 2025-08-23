@@ -199,7 +199,16 @@ class HomonymsLibrary:
         pass
 
     def get_statistics(self) -> Dict[str, int]:
-        pass
+        """Get statistics about the loaded homonym data"""
+
+        result: Dict[str, int] = {
+            'homograph_groups': len(self.homograph_groups),
+            'homophone_groups': len(self.homophone_groups),
+            'total_homographic_words': len(self.word_to_homographs),
+            'total_homophonic_words': len(self.word_to_homophones)
+        }
+
+        return result
 
 
 def main():
