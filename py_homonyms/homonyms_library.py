@@ -11,24 +11,28 @@ import re
 
 class HomonymsLibrary:
     """
-    A library for working with English homonyms, including:
-    - Homographs: words with same spelling but different meanings
-    - Homophones: words that sound alike but may have different spellings
-    - True homonyms: words that are both homographs and homophones
+    A local library for working with English homonyms, including:
+    - Homophones: words that sound the same, but are different in meaning (baseball bat vs animal bat) or spelling (sea vs see).
+    - Homographs: words that are spelled the same, but different in meaning and/or pronounciation (lead weight vs lead the team).
+    - Homonyms: words that are homographs, homophones, or both.
+    See: https://www.merriam-webster.com/grammar/homophones-vs-homographs-vs-homonyms
     """
 
     def __init__(self):
         self.homograph_groups: List[Set[str]] = self._load_homographs()
         self.homophone_groups: List[Set[str]] = self._load_homophones()
         self.word_to_homographs: Dict[str, Set[str]] = self._build_reverse_index(
-            self.homograph_groups
+            self.homograph_groups, keep_identical=True
         )
         self.word_to_homophones: Dict[str, Set[str]] = self._build_reverse_index(
-            self.homophone_groups
+            self.homophone_groups, keep_identical=True
         )
 
     def _load_homographs(self) -> List[Set[str]]:
-        """Load homograph groups (words with same spelling, but different meanings)"""
+        """
+        Load homograph groups (words with same spelling, but different meanings).  Can have same or different pronounciations.
+        See: https://www.merriam-webster.com/grammar/homophones-vs-homographs-vs-homonyms
+        """
 
         homographs: List[Set[str]] = [
             {"bank", "bank"},  # financial institution vs river bank
@@ -44,9 +48,10 @@ class HomonymsLibrary:
             {"minute", "minute"},  # time unit vs very small
             {"object", "object"},  # thing vs to protest
             {"perfect", "perfect"},  # flawless vs to make perfect
-            {"present", "present"},  # gift vs current time vs to show
+            {"present", "present", "present"},  # gift vs current time vs to show
             {"produce", "produce"},  # to create vs fruits/vegetables
             {"project", "project"},  # plan vs to extend outward
+            {"quail", "quail"},  # cower vs bird
             {"read", "read"},  # present vs past tense
             {"record", "record"},  # to capture vs a disc/document
             {"refuse", "refuse"},  # to decline vs garbage
@@ -58,10 +63,21 @@ class HomonymsLibrary:
         return homographs
 
     def _load_homophones(self) -> List[Set[str]]:
-        """Load homophone groups (words that sound alike, but are spelled differently)"""
+        """
+        Load homophone groups (words that sound alike, but have different meanings).  Spelling can be the same or different.
+        See: https://www.merriam-webster.com/grammar/homophones-vs-homographs-vs-homonyms
+        """
 
         # Common English homophones
         homophones: List[Set[str]] = [
+            {"bank", "bank"},  # financial institution vs river bank
+            {"bark", "bark"},  # dog sound vs tree covering
+            {"bat", "bat"},  # animal vs sports equipment
+            {"bear", "bear"},  # animal vs to carry
+            {"fair", "fair"},  # just vs carnival
+            {"present", "present"},  # a gift vs in the current time
+            {"subject", "subject"},  # topic vs to cause to experience
+            {"tear", "tear"},  # to rip vs from crying
             {"to", "too", "two"},
             {"there", "their", "they're"},
             {"hear", "here"},
@@ -81,6 +97,7 @@ class HomonymsLibrary:
             {"pale", "pail"},
             {"peace", "piece"},
             {"plain", "plane"},
+            {"quail", "quail"},  # cower vs bird
             {"rain", "reign", "rein"},
             {"road", "rode"},
             {"sail", "sale"},
@@ -110,7 +127,9 @@ class HomonymsLibrary:
 
         return homophones
 
-    def _build_reverse_index(self, groups: List[Set[str]]) -> Dict[str, Set[str]]:
+    def _build_reverse_index(
+        self, groups: List[Set[str]], keep_identical=False
+    ) -> Dict[str, Set[str]]:
         """Build reverse index from word to its homonym group"""
         result: Dict[str, Set[str]] = None
         index = defaultdict(set)
@@ -118,7 +137,9 @@ class HomonymsLibrary:
         for group in groups:
             for word in group:
                 index[word.lower()].update(
-                    w.lower() for w in group if w.lower() != word.lower()
+                    w.lower()
+                    for w in group
+                    if keep_identical or w.lower() != word.lower()
                 )
 
         result = dict(index)
@@ -136,45 +157,44 @@ class HomonymsLibrary:
             True if words are homographs, False otherwise
         """
         result: bool = False
-        word1, word2 = word1.lower().strip(), word2.lower().strip()
+        cleaned_word1, cleaned_word2 = word1.lower().strip(), word2.lower().strip()
 
-        # TODO: Find out if word lookup is not needed and can be removed for performance:
-        result = word1 == word2 and word1 in self.word_to_homographs
+        # Word lookup is needed since two strings spelled the same could just be the same word and not a homograph:
+        result = (
+            cleaned_word1 == cleaned_word2 and cleaned_word1 in self.word_to_homographs
+        )
         return result
 
     def are_homophones(self, word1: str, word2: str) -> bool:
         """
-        Check if two words are homophones (sound alike, but have different spelling)
+        Check if two words are homophones (sound alike, but differ in meaning, derivation, or spelling).
 
         Args:
-            word1: First word
-            word2: Second word
+            word1: First word.
+            word2: Second word.
 
         Returns:
-            True if words are homophones, False otherwise
+            True if words are homophones, False otherwise.
         """
 
         result: bool = False
 
-        word1, word2 = word1.lower().strip(), word2.lower().strip()
+        cleaned_word1, cleaned_word2 = word1.lower().strip(), word2.lower().strip()
 
-        if word1 == word2:
-            result = False  # Same word, not technically homophones
-        else:
-            result = word2 in self.word_to_homophones.get(word1, set())
+        result = cleaned_word2 in self.word_to_homophones.get(cleaned_word1, set())
 
         return result
 
     def are_homonyms(self, word1: str, word2: str) -> bool:
         """
-        Check if two words are homonyms (any type: homographs, homophones, or both)
+        Check if two words are homonyms (any type: homographs, homophones, or both).
 
         Args:
-            word1: First word
-            word2: Second word
+            word1: First word.
+            word2: Second word.
 
         Returns:
-            True if words are homonyms, False otherwise
+            True if words are homonyms, False otherwise.
         """
 
         result: bool = self.are_homographs(word1, word2) or self.are_homophones(
@@ -184,16 +204,69 @@ class HomonymsLibrary:
         return result
 
     def get_homographs(self, word: str) -> Set[str]:
-        pass
+        """
+        Get all homographs for a given word.
+
+        Args:
+            word: Input word
+
+        Returns:
+            Set of homographs (empty set if none found)
+        """
+        cleaned_word: str = word.lower().strip()
+        result: Set[str] = self.word_to_homographs.get(cleaned_word, set())
+        return result
 
     def get_homophones(self, word: str) -> Set[str]:
-        pass
+        """
+        Get all homophones for a given word.
+
+        Args:
+            word: Input word
+
+        Returns:
+            Set of homophones (empty set if none found)
+        """
+        cleaned_word = word.lower().strip()
+        result: Set[str] = self.word_to_homophones.get(cleaned_word, set())
+        return result
 
     def get_all_homonyms(self, word: str) -> Dict[str, Set[str]]:
-        pass
+        """
+        Get all types of homonyms for a given word.
+
+        Args:
+            word: Input word
+
+        Returns:
+            Dictionary with 'homographs', 'homophones', and 'all keys.  Value sets will be empty if no homonyms exist.
+        """
+
+        homographs: Set[str] = self.get_homographs(word)
+        homophones: Set[str] = self.get_homophones(word)
+        all: Set[str] = homographs.union(homophones)
+
+        result: Dict[str, Set[str]] = {
+            "homographs": homographs,
+            "homophones": homophones,
+            "all": all,
+        }
+
+        return result
 
     def add_homograph_group(self, words: List[str]) -> None:
-        pass
+        """
+        Add a new homograph group.
+
+        Args:
+            words: List of homographic words (same spelling, different meanings, may or may not have different pronounciations)
+        """
+        word_set = set(w.lower().strip() for w in words)
+        self.homograph_groups.append(word_set)
+
+        # Update reverse index
+        for word in word_set:
+            self.word_to_homographs[word].update(w for w in word_set)
 
     def add_homophone_group(self, words: List[str]) -> None:
         pass
@@ -202,17 +275,17 @@ class HomonymsLibrary:
         """Get statistics about the loaded homonym data"""
 
         result: Dict[str, int] = {
-            'homograph_groups': len(self.homograph_groups),
-            'homophone_groups': len(self.homophone_groups),
-            'total_homographic_words': len(self.word_to_homographs),
-            'total_homophonic_words': len(self.word_to_homophones)
+            "homograph_groups": len(self.homograph_groups),
+            "homophone_groups": len(self.homophone_groups),
+            "total_homographic_words": len(self.word_to_homographs),
+            "total_homophonic_words": len(self.word_to_homophones),
         }
 
         return result
 
 
 def main():
-    pass
+    test = HomonymsLibrary()
 
 
 if __name__ == "__main__":
