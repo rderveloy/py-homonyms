@@ -59,7 +59,7 @@ class HomonymsLibrary:
     def _load_homophones(self) -> List[Set[str]]:
         """Load homophone groups (words that sound alike, but are spelled differently)"""
         # Common English homophones
-        homophones = [
+        homophones: List[Set[str]] = [
             {"to", "too", "two"},
             {"there", "their", "they're"},
             {"hear", "here"},
@@ -108,7 +108,16 @@ class HomonymsLibrary:
         return homophones
 
     def _build_reverse_index(self, groups: List[Set[str]]) -> Dict[str, Set[str]]:
-        pass
+        """Build reverse index from word to its homonym group"""
+        result: Dict[str, Set[str]] = None
+        index = defaultdict(set)
+        
+        for group in groups:
+            for word in group:
+                index[word.lower()].update(w.lower() for w in group if w.lower() != word.lower())
+        
+        result = dict(index)
+        return result
 
     def are_homographs(self, word1: str, word2: str) -> bool:
         pass
