@@ -239,7 +239,7 @@ class HomonymsLibrary:
             word: Input word
 
         Returns:
-            Dictionary with 'homographs', 'homophones', and 'all keys.  Value sets will be empty if no homonyms exist.
+            Dictionary with 'homographs', 'homophones', and 'all keys.  Value sets will be empty if none exist.
         """
 
         homographs: Set[str] = self.get_homographs(word)
