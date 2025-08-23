@@ -254,22 +254,11 @@ class HomonymsLibrary:
 
         return result
 
-    def add_homograph_group(self, words: List[str]) -> None:
-        """
-        Add a new homograph group.
+    # def add_homograph_group(self, words: List[str]) -> None:
+    #     pass
 
-        Args:
-            words: List of homographic words (same spelling, different meanings, may or may not have different pronounciations)
-        """
-        word_set = set(w.lower().strip() for w in words)
-        self.homograph_groups.append(word_set)
-
-        # Update reverse index
-        for word in word_set:
-            self.word_to_homographs[word].update(w for w in word_set)
-
-    def add_homophone_group(self, words: List[str]) -> None:
-        pass
+    # def add_homophone_group(self, words: List[str]) -> None:
+    #     pass
 
     def get_statistics(self) -> Dict[str, int]:
         """Get statistics about the loaded homonym data"""
