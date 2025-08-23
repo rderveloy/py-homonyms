@@ -29,6 +29,7 @@ class HomonymsLibrary:
 
     def _load_homographs(self) -> List[Set[str]]:
         """Load homograph groups (words with same spelling, but different meanings)"""
+        
         homographs: List[Set[str]] = [
             {"bank", "bank"},  # financial institution vs river bank
             {"bark", "bark"},  # dog sound vs tree covering
@@ -58,6 +59,7 @@ class HomonymsLibrary:
 
     def _load_homophones(self) -> List[Set[str]]:
         """Load homophone groups (words that sound alike, but are spelled differently)"""
+        
         # Common English homophones
         homophones: List[Set[str]] = [
             {"to", "too", "two"},
@@ -105,6 +107,7 @@ class HomonymsLibrary:
             {"tied", "tide"},
             {"waste", "waist"},
         ]
+        
         return homophones
 
     def _build_reverse_index(self, groups: List[Set[str]]) -> Dict[str, Set[str]]:
@@ -120,10 +123,44 @@ class HomonymsLibrary:
         return result
 
     def are_homographs(self, word1: str, word2: str) -> bool:
-        pass
+        """
+        Check if two words are homographs (same spelling, different meanings)
+        
+        Args:
+            word1: First word
+            word2: Second word
+            
+        Returns:
+            True if words are homographs, False otherwise
+        """
+        result: bool = False
+        word1, word2 = word1.lower().strip(), word2.lower().strip()
+
+        #TODO: Find out if word lookup is not needed and can be removed for performance:
+        result = (word1 == word2 and word1 in self.word_to_homographs)
+        return result
 
     def are_homophones(self, word1: str, word2: str) -> bool:
-        pass
+        """
+        Check if two words are homophones (sound alike, but have different spelling)
+        
+        Args:
+            word1: First word
+            word2: Second word
+            
+        Returns:
+            True if words are homophones, False otherwise
+        """
+        
+        result: bool = False
+        word1, word2 = word1.lower().strip(), word2.lower().strip()
+        
+        if word1 == word2:
+            result = False # Same word, not homophones
+        else:
+            result = (word2 in self.word_to_homophones.get(word1, set()))
+
+        return result
 
     def are_homonyms(self, word1: str, word2: str) -> bool:
         pass
