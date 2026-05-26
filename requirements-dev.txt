@@ -1,0 +1,7 @@
+pycodestyle
+flake8
+black
+setuptools
+wheel
+twine
+pipreqs
