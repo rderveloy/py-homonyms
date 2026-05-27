@@ -14,11 +14,12 @@
       explain the *why* (rationale); the why is the floor and is never optional.
       Explaining the *what* in addition is welcome, but a comment that gives
       only the what, with no why, is insufficient.
-- [ ] CLAUDE.md: across ALL rules, examples must be either a complete list or
-      explicitly indicated as non-exhaustive (e.g. "non-exhaustive examples:",
-      "such as", "including but not limited to"). The existing rules (Naming,
-      Style, Type hints, Input validation, Testing) currently give "(e.g. ...)"
-      examples without flagging them as non-exhaustive — fix those too.
+- [ ] CLAUDE.md: add a meta-rule governing the rules themselves — any examples
+      given within a rule must be either a complete list or explicitly marked
+      non-exhaustive (e.g. "non-exhaustive examples:", "such as", "including but
+      not limited to"). Apply it retroactively: the existing rules (Naming,
+      Style, Type hints, Input validation, Testing) give "(e.g. ...)" examples
+      without flagging them as non-exhaustive — fix those too.
 - [ ] Make the mutator-managed backing fields name-mangled (double underscore,
       e.g. `__word_to_homophones`, `__word_to_homographs`, `__homophone_groups`,
       `__homograph_groups`, `__same_spelling_homophones`) so they are not
