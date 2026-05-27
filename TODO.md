@@ -10,9 +10,10 @@
       caller's honest mistake cannot silently corrupt state (defensive copies of
       returned data, read-only views of internals, mutation only through
       sanctioned methods).
-- [ ] CLAUDE.md: add/clarify a documentation rule requiring comments that
-      explain the *why* (rationale) behind non-obvious choices, not just what
-      the code does.
+- [ ] CLAUDE.md: add/clarify a documentation rule — every comment must at least
+      explain the *why* (rationale); the why is the floor and is never optional.
+      Explaining the *what* in addition is welcome, but a comment that gives
+      only the what, with no why, is insufficient.
 - [ ] Make the mutator-managed backing fields name-mangled (double underscore,
       e.g. `__word_to_homophones`, `__word_to_homographs`, `__homophone_groups`,
       `__homograph_groups`, `__same_spelling_homophones`) so they are not
