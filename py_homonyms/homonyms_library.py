@@ -1,13 +1,14 @@
 """
 English Homonyms Library
-A comprehensive library for checking homonyms, homophones, and homographs in English.
+A comprehensive library for checking homonyms, homophones, and
+homographs in English.
 """
 
+from __future__ import annotations
+
 import enum
-import json
-from typing import List, Dict, Set, Tuple, Optional
 from collections import defaultdict
-import re
+from collections.abc import Iterable
 
 from . import phonetics
 
@@ -15,11 +16,15 @@ from . import phonetics
 class MatchType(enum.Enum):
     """How two words relate.
 
-    ``HOMONYM``   - both a homograph and a homophone (e.g. ``bat`` the animal vs. the bat you swing).
-    ``HOMOPHONE`` - sound alike but not the same spelling (e.g. ``to`` / ``two``).
-    ``HOMOGRAPH`` - same spelling, different meaning/pronunciation (e.g. ``lead``).
+    ``HOMONYM``   - both a homograph and a homophone (e.g. ``bat`` the
+                    animal vs. the bat you swing).
+    ``HOMOPHONE`` - sound alike but not the same spelling
+                    (e.g. ``to`` / ``two``).
+    ``HOMOGRAPH`` - same spelling, different meaning/pronunciation
+                    (e.g. ``lead``).
     ``DIFFERENT`` - unrelated by spelling and sound.
-    ``UNKNOWN``   - no curated or phonetic data was available to judge the pair.
+    ``UNKNOWN``   - no curated or phonetic data was available to judge
+                    the pair.
     """
 
     HOMONYM = "homonym"
@@ -32,37 +37,47 @@ class MatchType(enum.Enum):
 class HomonymsLibrary:
     """
     A local library for working with English homonyms, including:
-    - Homophones: words that sound the same, but are different in meaning (baseball bat vs animal bat) or spelling (sea vs see).
-    - Homographs: words that are spelled the same, but different in meaning and/or pronounciation (lead weight vs lead the team).
+    - Homophones: words that sound the same, but are different in meaning
+      (baseball bat vs animal bat) or spelling (sea vs see).
+    - Homographs: words that are spelled the same, but different in
+      meaning and/or pronunciation (lead weight vs lead the team).
     - Homonyms: words that are homographs, homophones, or both.
-    See: https://www.merriam-webster.com/grammar/homophones-vs-homographs-vs-homonyms
+    See:
+    https://www.merriam-webster.com/grammar/homophones-vs-homographs-vs-homonyms
     """
 
-    def __init__(self):
-        self.homograph_groups: List[Set[str]] = self._load_homographs()
-        self.homophone_groups: List[Set[str]] = self._load_homophones()
-        self.word_to_homographs: Dict[str, Set[str]] = self._build_reverse_index(
-            self.homograph_groups, keep_identical=True
+    def __init__(self) -> None:
+        self.homograph_groups: list[set[str]] = self._load_homographs()
+        self.homophone_groups: list[set[str]] = self._load_homophones()
+        self.word_to_homographs: dict[str, set[str]] = (
+            self._build_reverse_index(
+                self.homograph_groups, keep_identical=True
+            )
         )
-        self.word_to_homophones: Dict[str, Set[str]] = self._build_reverse_index(
-            self.homophone_groups, keep_identical=True
+        self.word_to_homophones: dict[str, set[str]] = (
+            self._build_reverse_index(
+                self.homophone_groups, keep_identical=True
+            )
         )
         # Words that are homophones of themselves: same spelling, same sound,
         # different meaning (e.g. "bat"). These appear as single-member groups.
-        self.same_spelling_homophones: Set[str] = {
+        self.same_spelling_homophones: set[str] = {
             word.lower()
             for group in self.homophone_groups
-            if len({w.lower() for w in group}) == 1
+            if len({member.lower() for member in group}) == 1
             for word in group
         }
 
-    def _load_homographs(self) -> List[Set[str]]:
-        """
-        Load homograph groups (words with same spelling, but different meanings).  Can have same or different pronounciations.
-        See: https://www.merriam-webster.com/grammar/homophones-vs-homographs-vs-homonyms
+    def _load_homographs(self) -> list[set[str]]:
+        """Load homograph groups (words with the same spelling but
+        different meanings). They can have the same or different
+        pronunciations.
+
+        See:
+        https://www.merriam-webster.com/grammar/homophones-vs-homographs-vs-homonyms
         """
 
-        homographs: List[Set[str]] = [
+        homographs: list[set[str]] = [
             {"bank", "bank"},  # financial institution vs river bank
             {"bark", "bark"},  # dog sound vs tree covering
             {"bat", "bat"},  # animal vs sports equipment
@@ -76,7 +91,7 @@ class HomonymsLibrary:
             {"minute", "minute"},  # time unit vs very small
             {"object", "object"},  # thing vs to protest
             {"perfect", "perfect"},  # flawless vs to make perfect
-            {"present", "present", "present"},  # gift vs current time vs to show
+            {"present", "present", "present"},  # gift vs now vs to show
             {"produce", "produce"},  # to create vs fruits/vegetables
             {"project", "project"},  # plan vs to extend outward
             {"quail", "quail"},  # cower vs bird
@@ -150,14 +165,16 @@ class HomonymsLibrary:
         ]
         return homographs
 
-    def _load_homophones(self) -> List[Set[str]]:
-        """
-        Load homophone groups (words that sound alike, but have different meanings).  Spelling can be the same or different.
-        See: https://www.merriam-webster.com/grammar/homophones-vs-homographs-vs-homonyms
+    def _load_homophones(self) -> list[set[str]]:
+        """Load homophone groups (words that sound alike but have
+        different meanings). Spelling can be the same or different.
+
+        See:
+        https://www.merriam-webster.com/grammar/homophones-vs-homographs-vs-homonyms
         """
 
         # Common English homophones
-        homophones: List[Set[str]] = [
+        homophones: list[set[str]] = [
             {"bank", "bank"},  # financial institution vs river bank
             {"bark", "bark"},  # dog sound vs tree covering
             {"bat", "bat"},  # animal vs sports equipment
@@ -390,191 +407,299 @@ class HomonymsLibrary:
         return homophones
 
     def _build_reverse_index(
-        self, groups: List[Set[str]], keep_identical=False
-    ) -> Dict[str, Set[str]]:
-        """Build reverse index from word to its homonym group"""
-        result: Dict[str, Set[str]] = None
-        index = defaultdict(set)
+        self, groups: list[set[str]], keep_identical: bool = False
+    ) -> dict[str, set[str]]:
+        """Build a reverse index from each word to its homonym group."""
+        index: dict[str, set[str]] = defaultdict(set)
 
         for group in groups:
             for word in group:
-                index[word.lower()].update(
-                    w.lower()
-                    for w in group
-                    if keep_identical or w.lower() != word.lower()
+                lowered_word = word.lower()
+                index[lowered_word].update(
+                    member.lower()
+                    for member in group
+                    if keep_identical or member.lower() != lowered_word
                 )
 
-        result = dict(index)
-        return result
+        return dict(index)
+
+    def _clean_word(self, word: str, parameter: str = "word") -> str:
+        """Normalize and validate a single word argument.
+
+        Raises:
+            TypeError: If ``word`` is not a ``str``.
+            ValueError: If ``word`` has no non-whitespace characters.
+        """
+        if not isinstance(word, str):
+            raise TypeError("%s must be a str, got %r" % (parameter, word))
+        cleaned_word = word.lower().strip()
+        if not cleaned_word:
+            raise ValueError(
+                "%s must contain a non-whitespace character, got %r"
+                % (parameter, word)
+            )
+        return cleaned_word
+
+    def _clean_group(
+        self, words: Iterable[str], parameter: str = "words"
+    ) -> set[str]:
+        """Normalize and validate a group of words.
+
+        Raises:
+            TypeError: If ``words`` is a ``str`` or contains a non-``str``.
+            ValueError: If no word has a non-whitespace character.
+        """
+        if isinstance(words, str):
+            raise TypeError(
+                "%s must be an iterable of str, not a str, got %r"
+                % (parameter, words)
+            )
+        cleaned_group: set[str] = set()
+        for word in words:
+            if not isinstance(word, str):
+                raise TypeError(
+                    "%s must contain only str, got %r" % (parameter, word)
+                )
+            cleaned_word = word.lower().strip()
+            if cleaned_word:
+                cleaned_group.add(cleaned_word)
+        if not cleaned_group:
+            raise ValueError(
+                "%s must contain at least one non-whitespace word, got %r"
+                % (parameter, words)
+            )
+        return cleaned_group
 
     def are_homographs(self, word1: str, word2: str) -> bool:
-        """
-        Check if two words are homographs (same spelling, different meanings)
+        """Check if two words are homographs (same spelling, different
+        meanings).
 
         Args:
-            word1: First word
-            word2: Second word
+            word1: First word.
+            word2: Second word.
 
         Returns:
-            True if words are homographs, False otherwise
-        """
-        cleaned_word1, cleaned_word2 = word1.lower().strip(), word2.lower().strip()
+            True if the words are homographs, False otherwise.
 
-        # Word lookup is needed since two strings spelled the same could just be the same word and not a homograph:
+        Raises:
+            TypeError: If either argument is not a ``str``.
+            ValueError: If either argument has no non-whitespace characters.
+        """
+        cleaned_word1 = self._clean_word(word1, "word1")
+        cleaned_word2 = self._clean_word(word2, "word2")
+        return self._are_homographs(cleaned_word1, cleaned_word2)
+
+    def _are_homographs(
+        self, cleaned_word1: str, cleaned_word2: str
+    ) -> bool:
+        # A word spelled like another could simply be the same word, so equal
+        # spelling is required but not sufficient.
         if cleaned_word1 != cleaned_word2:
             return False
         if cleaned_word1 in self.word_to_homographs:
             return True
-
         # Fallback: a word with more than one pronunciation (a heteronym, e.g.
-        # "lead"/"read") is a homograph even when it is not in the curated cache.
+        # "lead"/"read") is a homograph even when not in the curated cache.
         return len(phonetics.pronunciations(cleaned_word1)) > 1
 
     def are_homophones(self, word1: str, word2: str) -> bool:
-        """
-        Check if two words are homophones (sound alike, but differ in meaning, derivation, or spelling).
+        """Check if two words are homophones (sound alike, but differ in
+        meaning, derivation, or spelling).
 
         Args:
             word1: First word.
             word2: Second word.
 
         Returns:
-            True if words are homophones, False otherwise.
+            True if the words are homophones, False otherwise.
+
+        Raises:
+            TypeError: If either argument is not a ``str``.
+            ValueError: If either argument has no non-whitespace characters.
         """
+        cleaned_word1 = self._clean_word(word1, "word1")
+        cleaned_word2 = self._clean_word(word2, "word2")
+        return self._are_homophones(cleaned_word1, cleaned_word2)
 
-        cleaned_word1, cleaned_word2 = word1.lower().strip(), word2.lower().strip()
-
-        # Same spelling is only a homophone relationship for curated same-spelling
-        # homonyms (e.g. "bat"); a word is not otherwise a homophone of itself, and
-        # phonetics alone cannot tell two meanings of one spelling apart.
+    def _are_homophones(
+        self, cleaned_word1: str, cleaned_word2: str
+    ) -> bool:
+        # Same spelling is only a homophone relationship for curated
+        # same-spelling homonyms (e.g. "bat"); a word is not otherwise a
+        # homophone of itself, and phonetics alone cannot tell two meanings of
+        # one spelling apart.
         if cleaned_word1 == cleaned_word2:
             return cleaned_word1 in self.same_spelling_homophones
-
         if cleaned_word2 in self.word_to_homophones.get(cleaned_word1, set()):
             return True
-
-        # Fallback: different-spelled words that share a pronunciation are homophones.
+        # Fallback: different-spelled words that share a pronunciation.
         return phonetics.sound_alike(cleaned_word1, cleaned_word2)
 
     def are_homonyms(self, word1: str, word2: str) -> bool:
-        """
-        Check if two words are homonyms (any type: homographs, homophones, or both).
+        """Check if two words are homonyms (homographs, homophones, or both).
 
         Args:
             word1: First word.
             word2: Second word.
 
         Returns:
-            True if words are homonyms, False otherwise.
+            True if the words are homonyms, False otherwise.
+
+        Raises:
+            TypeError: If either argument is not a ``str``.
+            ValueError: If either argument has no non-whitespace characters.
         """
+        cleaned_word1 = self._clean_word(word1, "word1")
+        cleaned_word2 = self._clean_word(word2, "word2")
+        return self._are_homographs(
+            cleaned_word1, cleaned_word2
+        ) or self._are_homophones(cleaned_word1, cleaned_word2)
 
-        result: bool = self.are_homographs(word1, word2) or self.are_homophones(
-            word1, word2
-        )
-
-        return result
-
-    def classify(self, word1: str, word2: str) -> "MatchType":
+    def classify(self, word1: str, word2: str) -> MatchType:
         """Classify how two words relate, returning a :class:`MatchType`.
 
         A pair that is both a homograph and a homophone is reported as
         ``HOMONYM``. When neither curated data nor cmudict can speak to the
         pair, the result is ``UNKNOWN`` rather than ``DIFFERENT``.
-        """
-        homograph: bool = self.are_homographs(word1, word2)
-        homophone: bool = self.are_homophones(word1, word2)
 
-        if homograph and homophone:
+        Args:
+            word1: First word.
+            word2: Second word.
+
+        Returns:
+            The :class:`MatchType` describing the relationship.
+
+        Raises:
+            TypeError: If either argument is not a ``str``.
+            ValueError: If either argument has no non-whitespace characters.
+        """
+        cleaned_word1 = self._clean_word(word1, "word1")
+        cleaned_word2 = self._clean_word(word2, "word2")
+
+        is_homograph: bool = self._are_homographs(
+            cleaned_word1, cleaned_word2
+        )
+        is_homophone: bool = self._are_homophones(
+            cleaned_word1, cleaned_word2
+        )
+
+        if is_homograph and is_homophone:
             return MatchType.HOMONYM
-        if homograph:
+        if is_homograph:
             return MatchType.HOMOGRAPH
-        if homophone:
+        if is_homophone:
             return MatchType.HOMOPHONE
 
-        cleaned_word1, cleaned_word2 = word1.lower().strip(), word2.lower().strip()
-        known = (
+        first_is_known: bool = (
             cleaned_word1 in self.word_to_homophones
             or cleaned_word1 in self.word_to_homographs
             or bool(phonetics.pronunciations(cleaned_word1))
-        ) and (
+        )
+        second_is_known: bool = (
             cleaned_word2 in self.word_to_homophones
             or cleaned_word2 in self.word_to_homographs
             or bool(phonetics.pronunciations(cleaned_word2))
         )
-        return MatchType.DIFFERENT if known else MatchType.UNKNOWN
+        if first_is_known and second_is_known:
+            return MatchType.DIFFERENT
+        return MatchType.UNKNOWN
 
-    def get_homographs(self, word: str) -> Set[str]:
-        """
-        Get all homographs for a given word.
-
-        Args:
-            word: Input word
-
-        Returns:
-            Set of homographs (empty set if none found)
-        """
-        cleaned_word: str = word.lower().strip()
-        result: Set[str] = self.word_to_homographs.get(cleaned_word, set())
-        return result
-
-    def get_homophones(self, word: str) -> Set[str]:
-        """
-        Get all homophones for a given word.
+    def get_homographs(self, word: str) -> set[str]:
+        """Get all homographs for a given word.
 
         Args:
-            word: Input word
+            word: Input word.
 
         Returns:
-            Set of homophones (empty set if none found)
-        """
-        cleaned_word = word.lower().strip()
-        curated: Set[str] = self.word_to_homophones.get(cleaned_word, set())
+            Set of homographs (empty set if none found).
 
+        Raises:
+            TypeError: If ``word`` is not a ``str``.
+            ValueError: If ``word`` has no non-whitespace characters.
+        """
+        cleaned_word = self._clean_word(word)
+        return self._get_homographs(cleaned_word)
+
+    def _get_homographs(self, cleaned_word: str) -> set[str]:
+        return self.word_to_homographs.get(cleaned_word, set())
+
+    def get_homophones(self, word: str) -> set[str]:
+        """Get all homophones for a given word.
+
+        Args:
+            word: Input word.
+
+        Returns:
+            Set of homophones (empty set if none found).
+
+        Raises:
+            TypeError: If ``word`` is not a ``str``.
+            ValueError: If ``word`` has no non-whitespace characters.
+        """
+        cleaned_word = self._clean_word(word)
+        return self._get_homophones(cleaned_word)
+
+    def _get_homophones(self, cleaned_word: str) -> set[str]:
+        curated: set[str] = self.word_to_homophones.get(cleaned_word, set())
         # Curated cache is authoritative and fast; only fall back to cmudict
         # (which loads its dictionary) for words the cache does not cover.
-        result: Set[str] = set(curated) if curated else phonetics.homophones(cleaned_word)
-
+        result: set[str] = (
+            set(curated) if curated else phonetics.homophones(cleaned_word)
+        )
         result.discard(cleaned_word)
         return result
 
-    def get_all_homonyms(self, word: str) -> Dict[str, Set[str]]:
-        """
-        Get all types of homonyms for a given word.
+    def get_all_homonyms(self, word: str) -> dict[str, set[str]]:
+        """Get all types of homonyms for a given word.
 
         Args:
-            word: Input word
+            word: Input word.
 
         Returns:
-            Dictionary with 'homographs', 'homophones', and 'all keys.  Value sets will be empty if none exist.
+            Dictionary with ``homographs``, ``homophones``, and ``all`` keys.
+            Value sets are empty if none exist.
+
+        Raises:
+            TypeError: If ``word`` is not a ``str``.
+            ValueError: If ``word`` has no non-whitespace characters.
         """
-
-        homographs: Set[str] = self.get_homographs(word)
-        homophones: Set[str] = self.get_homophones(word)
-        all: Set[str] = homographs.union(homophones)
-
-        result: Dict[str, Set[str]] = {
+        cleaned_word = self._clean_word(word)
+        homographs: set[str] = self._get_homographs(cleaned_word)
+        homophones: set[str] = self._get_homophones(cleaned_word)
+        combined: set[str] = homographs.union(homophones)
+        return {
             "homographs": homographs,
             "homophones": homophones,
-            "all": all,
+            "all": combined,
         }
 
-        return result
-
-    def _index_group(self, index: Dict[str, Set[str]], group: Set[str]) -> None:
-        """Add one group to a reverse index in place (keep_identical semantics)."""
+    def _index_group(
+        self, index: dict[str, set[str]], group: set[str]
+    ) -> None:
+        """Add one group to a reverse index in place (keep_identical)."""
         for word in group:
             index.setdefault(word, set()).update(group)
 
-    def add_homophone_group(self, words: List[str]) -> bool:
+    def add_homophone_group(self, words: Iterable[str]) -> bool:
         """Register a new homophone group (words that sound alike).
 
         Words are lower-cased and stripped. A group that collapses to a single
         spelling is treated as a same-spelling homonym (like the curated
-        ``{"bat"}``). Returns ``True`` if the group was added, ``False`` if it
-        was empty or already present.
+        ``{"bat"}``).
+
+        Args:
+            words: The words that share a pronunciation.
+
+        Returns:
+            True if the group was added, False if an identical group already
+            exists.
+
+        Raises:
+            TypeError: If ``words`` is a ``str`` or contains a non-``str``.
+            ValueError: If no word has a non-whitespace character.
         """
-        group = {w.lower().strip() for w in words if w and w.strip()}
-        if not group or group in self.homophone_groups:
+        group = self._clean_group(words)
+        if group in self.homophone_groups:
             return False
         self.homophone_groups.append(group)
         self._index_group(self.word_to_homophones, group)
@@ -582,21 +707,29 @@ class HomonymsLibrary:
             self.same_spelling_homophones.update(group)
         return True
 
-    def add_homograph_group(self, words: List[str]) -> bool:
+    def add_homograph_group(self, words: Iterable[str]) -> bool:
         """Register a new homograph group (words spelled the same).
 
-        Words are lower-cased and stripped. Returns ``True`` if the group was
-        added, ``False`` if it was empty or already present.
+        Args:
+            words: The words that share a spelling.
+
+        Returns:
+            True if the group was added, False if an identical group already
+            exists.
+
+        Raises:
+            TypeError: If ``words`` is a ``str`` or contains a non-``str``.
+            ValueError: If no word has a non-whitespace character.
         """
-        group = {w.lower().strip() for w in words if w and w.strip()}
-        if not group or group in self.homograph_groups:
+        group = self._clean_group(words)
+        if group in self.homograph_groups:
             return False
         self.homograph_groups.append(group)
         self._index_group(self.word_to_homographs, group)
         return True
 
-    def warm(self, word: str) -> Dict[str, Set[str]]:
-        """Promote cmudict fallback results for ``word`` into the curated cache.
+    def warm(self, word: str) -> dict[str, set[str]]:
+        """Promote cmudict fallback results for ``word`` into the cache.
 
         This is the opt-in counterpart to the read-only getters: rather than
         having a lookup silently mutate shared state, callers ask for promotion
@@ -604,33 +737,46 @@ class HomonymsLibrary:
         linked homophones) hit the in-memory groups instead of the phonetic
         fallback, and the pairs show up in :meth:`get_statistics`.
 
-        Returns the homophones/homographs that were newly promoted (empty sets
-        if the word was already cached or cmudict had nothing to add).
-        """
-        cleaned = word.lower().strip()
-        promoted: Dict[str, Set[str]] = {"homophones": set(), "homographs": set()}
-        if not cleaned:
-            return promoted
+        Args:
+            word: The word to promote into the curated cache.
 
-        if cleaned not in self.word_to_homophones:
-            partners = phonetics.homophones(cleaned)
-            # Only multi-spelling groups are valid homophones; a lone word would
-            # be wrongly recorded as a same-spelling homonym.
-            if partners and self.add_homophone_group(partners | {cleaned}):
+        Returns:
+            The homophones/homographs that were newly promoted (empty sets if
+            the word was already cached or cmudict had nothing to add).
+
+        Raises:
+            TypeError: If ``word`` is not a ``str``.
+            ValueError: If ``word`` has no non-whitespace characters.
+        """
+        cleaned_word = self._clean_word(word)
+        promoted: dict[str, set[str]] = {
+            "homophones": set(),
+            "homographs": set(),
+        }
+
+        if cleaned_word not in self.word_to_homophones:
+            partners = phonetics.homophones(cleaned_word)
+            # Only multi-spelling groups are valid homophones; a lone word
+            # would be wrongly recorded as a same-spelling homonym.
+            if partners and self.add_homophone_group(
+                partners | {cleaned_word}
+            ):
                 promoted["homophones"] = partners
 
-        if cleaned not in self.word_to_homographs:
-            if len(phonetics.pronunciations(cleaned)) > 1 and self.add_homograph_group(
-                {cleaned}
+        if cleaned_word not in self.word_to_homographs:
+            has_multiple_pronunciations = (
+                len(phonetics.pronunciations(cleaned_word)) > 1
+            )
+            if has_multiple_pronunciations and self.add_homograph_group(
+                {cleaned_word}
             ):
-                promoted["homographs"] = {cleaned}
+                promoted["homographs"] = {cleaned_word}
 
         return promoted
 
-    def get_statistics(self) -> Dict[str, int]:
-        """Get statistics about the loaded homonym data"""
-
-        result: Dict[str, int] = {
+    def get_statistics(self) -> dict[str, int]:
+        """Get statistics about the loaded homonym data."""
+        return {
             "homograph_groups": len(self.homograph_groups),
             "homophone_groups": len(self.homophone_groups),
             "total_homographic_words": len(self.word_to_homographs),
@@ -638,11 +784,9 @@ class HomonymsLibrary:
             "phonetic_fallback_enabled": int(phonetics.available()),
         }
 
-        return result
 
-
-def main():
-    test = HomonymsLibrary()
+def main() -> None:
+    HomonymsLibrary()
 
 
 if __name__ == "__main__":

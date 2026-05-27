@@ -17,7 +17,8 @@ def test_curated_homophones(lib):
 
 def test_curated_homographs(lib):
     assert lib.are_homographs("lead", "lead")
-    assert lib.are_homographs("lead", "lead ")  # whitespace stripped, still a homograph
+    # whitespace stripped, still a homograph
+    assert lib.are_homographs("lead", "lead ")
     assert not lib.are_homographs("cat", "cat")  # same word, not a homograph
 
 
@@ -60,8 +61,8 @@ def test_get_homophones_excludes_self(lib):
 
 
 def test_curated_getter_is_clean_and_fast(lib):
-    # A cached word returns exactly its curated homophones, without falling back
-    # to cmudict (which would add proper-noun/surname forms like "tew").
+    # A cached word returns exactly its curated homophones, without
+    # falling back to cmudict (which adds surname forms like "tew").
     assert lib.get_homophones("to") == {"too", "two"}
 
 
@@ -79,7 +80,8 @@ class TestCmudictFallback:
         assert lib.are_homophones("moose", "mousse")
 
     def test_homograph_not_in_cache(self, lib):
-        # "moped" sounds two ways (the vehicle vs. past tense of mope) but isn't curated here.
+        # "moped" sounds two ways (the vehicle vs. past tense of mope)
+        # but isn't curated here.
         assert "moped" not in lib.word_to_homographs
         assert lib.are_homographs("moped", "moped")
 
@@ -110,14 +112,43 @@ class TestMutators:
         assert lib.add_homograph_group(["Wug"])
         assert lib.are_homographs("wug", "wug")
 
-    def test_add_group_rejects_empty_and_duplicates(self):
+    def test_add_group_rejects_empty(self):
         lib = HomonymsLibrary()
-        assert not lib.add_homophone_group([])
-        assert not lib.add_homophone_group(["  "])
+        with pytest.raises(ValueError):
+            lib.add_homophone_group([])
+        with pytest.raises(ValueError):
+            lib.add_homophone_group(["  "])
+
+    def test_add_group_skips_duplicates(self):
+        lib = HomonymsLibrary()
         assert lib.add_homophone_group(["foo", "bar"])
         before = len(lib.homophone_groups)
         assert not lib.add_homophone_group(["bar", "foo"])  # same set, no-op
         assert len(lib.homophone_groups) == before
+
+
+class TestInputValidation:
+    def test_predicate_rejects_non_str(self, lib):
+        with pytest.raises(TypeError):
+            lib.are_homophones(123, "two")
+
+    def test_getter_rejects_blank(self, lib):
+        with pytest.raises(ValueError):
+            lib.get_homophones("   ")
+
+    def test_classify_rejects_non_str(self, lib):
+        with pytest.raises(TypeError):
+            lib.classify("to", None)
+
+    def test_group_rejects_bare_string(self):
+        lib = HomonymsLibrary()
+        with pytest.raises(TypeError):
+            lib.add_homophone_group("foo")
+
+    def test_group_rejects_non_str_member(self):
+        lib = HomonymsLibrary()
+        with pytest.raises(TypeError):
+            lib.add_homophone_group(["foo", 5])
 
 
 @pytest.mark.skipif(not phonetics.available(), reason="cmudict not installed")

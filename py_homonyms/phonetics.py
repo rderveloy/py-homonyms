@@ -14,7 +14,7 @@ from functools import lru_cache
 
 try:
     import cmudict as _cmudict
-except ImportError:  # pragma: no cover - exercised only without the optional dep
+except ImportError:  # pragma: no cover - only without the optional dep
     _cmudict = None
 
 Pronunciation = tuple[str, ...]
@@ -42,10 +42,10 @@ def pronunciations(word: str) -> set[Pronunciation]:
 
 def sound_alike(word1: str, word2: str) -> bool:
     """Return ``True`` if the two words share at least one pronunciation."""
-    p1 = pronunciations(word1)
-    if not p1:
+    first_pronunciations = pronunciations(word1)
+    if not first_pronunciations:
         return False
-    return bool(p1 & pronunciations(word2))
+    return bool(first_pronunciations & pronunciations(word2))
 
 
 @lru_cache(maxsize=1)
@@ -59,7 +59,7 @@ def _reverse_index() -> dict[Pronunciation, set[str]]:
 
 
 def homophones(word: str) -> set[str]:
-    """Return words that share a pronunciation with ``word`` (excluding itself).
+    """Return words sharing a pronunciation with ``word`` (excluding it).
 
     Empty if ``word`` is unknown or cmudict is unavailable.
     """
