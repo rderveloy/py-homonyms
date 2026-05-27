@@ -29,9 +29,14 @@
       Sphinx/IDEs though ignored at runtime), and a one-line note in the class
       docstring pointing callers to the properties + mutators.
 - [ ] CLAUDE.md: add a rule to follow the principles of *Clean Code* by Robert
-      C. Martin (e.g. small focused functions, meaningful names, minimal
-      arguments, command-query separation, DRY, no dead code).
+      C. Martin. Non-exhaustive examples: small functions that do one thing at a
+      single level of abstraction; meaningful, intention-revealing names;
+      minimal arguments (prefer 0-3, avoid flag args); command-query separation;
+      no side effects; DRY; prefer exceptions to error codes; no dead code;
+      leave code cleaner than you found it (boy-scout rule).
 - [ ] CLAUDE.md: add a separate rule to follow the principles of *Clean
-      Architecture* by Robert C. Martin (e.g. separation of concerns, the
-      dependency rule — source dependencies point inward toward abstractions,
-      not details; keep business logic independent of frameworks/IO).
+      Architecture* by Robert C. Martin. Non-exhaustive examples: separation of
+      concerns across boundaries; the dependency rule — source dependencies
+      point inward toward higher-level policy/abstractions, never toward
+      details; business logic independent of frameworks, UI, DB, and IO; depend
+      on abstractions via interfaces; the SOLID principles.
