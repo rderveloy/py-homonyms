@@ -360,10 +360,11 @@ class HomonymsLibrary:
             Set of homophones (empty set if none found)
         """
         cleaned_word = word.lower().strip()
-        result: Set[str] = set(self.word_to_homophones.get(cleaned_word, set()))
+        curated: Set[str] = self.word_to_homophones.get(cleaned_word, set())
 
-        # Fallback: add words that sound alike but are not in the curated cache.
-        result |= phonetics.homophones(cleaned_word)
+        # Curated cache is authoritative and fast; only fall back to cmudict
+        # (which loads its dictionary) for words the cache does not cover.
+        result: Set[str] = set(curated) if curated else phonetics.homophones(cleaned_word)
 
         result.discard(cleaned_word)
         return result

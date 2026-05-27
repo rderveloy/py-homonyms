@@ -59,6 +59,12 @@ def test_get_homophones_excludes_self(lib):
     assert "to" not in result
 
 
+def test_curated_getter_is_clean_and_fast(lib):
+    # A cached word returns exactly its curated homophones, without falling back
+    # to cmudict (which would add proper-noun/surname forms like "tew").
+    assert lib.get_homophones("to") == {"too", "two"}
+
+
 def test_get_statistics_reports_fallback(lib):
     stats = lib.get_statistics()
     assert "phonetic_fallback_enabled" in stats
