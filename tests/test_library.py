@@ -127,28 +127,155 @@ class TestMutators:
         assert len(lib.homophone_groups) == before
 
 
-class TestInputValidation:
-    def test_predicate_rejects_non_str(self, lib):
-        with pytest.raises(TypeError):
-            lib.are_homophones(123, "two")
+WORD_PREDICATES = [
+    "are_homographs",
+    "are_homophones",
+    "are_homonyms",
+    "classify",
+]
+WORD_GETTERS = [
+    "get_homographs",
+    "get_homophones",
+    "get_all_homonyms",
+    "warm",
+]
+NON_STR_INPUTS = [123, 3.14, None, b"bytes", ["to"], {"to"}, ("to",), object()]
+BLANK_STRINGS = ["", "   ", "\t\n  "]
+# Valid str inputs that are unusual but must be handled without error.
+WEIRD_VALID_WORDS = [
+    "café",                       # accented
+    "naïve",
+    "Zürich",
+    "δοκιμή",                     # non-Latin script
+    "ｔｏ",                         # full-width Latin
+    "to​o",                  # embedded zero-width space
+    "a" * 100_000,                # oversized
+    "(a+)+$",                     # regex-pathological-looking
+    "a?a?a?a?aaaa",
+    "'; DROP TABLE words; --",    # SQL-injection-looking
+    "../../etc/passwd",           # path-traversal-looking
+]
 
-    def test_getter_rejects_blank(self, lib):
+
+class TestHostileWordInput:
+    @pytest.mark.parametrize("method", WORD_PREDICATES)
+    @pytest.mark.parametrize("bad", NON_STR_INPUTS)
+    def test_two_arg_rejects_non_str(self, lib, method, bad):
+        func = getattr(lib, method)
+        with pytest.raises(TypeError):
+            func(bad, "two")
+        with pytest.raises(TypeError):
+            func("two", bad)
+
+    @pytest.mark.parametrize("method", WORD_PREDICATES)
+    @pytest.mark.parametrize("blank", BLANK_STRINGS)
+    def test_two_arg_rejects_blank(self, lib, method, blank):
+        func = getattr(lib, method)
         with pytest.raises(ValueError):
-            lib.get_homophones("   ")
+            func(blank, "two")
+        with pytest.raises(ValueError):
+            func("two", blank)
 
-    def test_classify_rejects_non_str(self, lib):
+    @pytest.mark.parametrize("method", WORD_GETTERS)
+    @pytest.mark.parametrize("bad", NON_STR_INPUTS)
+    def test_one_arg_rejects_non_str(self, lib, method, bad):
         with pytest.raises(TypeError):
-            lib.classify("to", None)
+            getattr(lib, method)(bad)
 
-    def test_group_rejects_bare_string(self):
+    @pytest.mark.parametrize("method", WORD_GETTERS)
+    @pytest.mark.parametrize("blank", BLANK_STRINGS)
+    def test_one_arg_rejects_blank(self, lib, method, blank):
+        with pytest.raises(ValueError):
+            getattr(lib, method)(blank)
+
+
+class TestHostileGroupInput:
+    @pytest.mark.parametrize(
+        "words",
+        [
+            "foo",          # a bare str iterates into characters
+            b"foo",         # bytes iterate into ints
+            123,            # not iterable
+            None,           # not iterable
+            ["foo", 5],     # non-str member
+            ["foo", None],
+            [["nested"]],   # nested-list member
+            [{"key": 1}],   # dict member
+        ],
+    )
+    def test_rejects_bad_types(self, words):
         lib = HomonymsLibrary()
         with pytest.raises(TypeError):
-            lib.add_homophone_group("foo")
-
-    def test_group_rejects_non_str_member(self):
-        lib = HomonymsLibrary()
+            lib.add_homophone_group(words)
         with pytest.raises(TypeError):
-            lib.add_homophone_group(["foo", 5])
+            lib.add_homograph_group(words)
+
+    @pytest.mark.parametrize(
+        "words",
+        [[], (), set(), ["  ", "\t"], {"", "   "}],
+    )
+    def test_rejects_empty_or_blank(self, words):
+        lib = HomonymsLibrary()
+        with pytest.raises(ValueError):
+            lib.add_homophone_group(words)
+        with pytest.raises(ValueError):
+            lib.add_homograph_group(words)
+
+
+class TestRobustValidInput:
+    @pytest.mark.parametrize("word", WEIRD_VALID_WORDS)
+    def test_getters_handle_weird_but_valid(self, lib, word):
+        assert isinstance(lib.get_homophones(word), set)
+        assert isinstance(lib.get_homographs(word), set)
+        assert set(lib.get_all_homonyms(word)) == {
+            "homographs",
+            "homophones",
+            "all",
+        }
+
+    @pytest.mark.parametrize("word", WEIRD_VALID_WORDS)
+    def test_predicates_handle_weird_but_valid(self, lib, word):
+        assert isinstance(lib.are_homophones(word, "to"), bool)
+        assert isinstance(lib.are_homographs(word, word), bool)
+        assert isinstance(lib.are_homonyms(word, "to"), bool)
+        assert isinstance(lib.classify(word, "to"), MatchType)
+
+
+class TestExecutionPaths:
+    def test_are_homographs_different_spelling_is_false(self, lib):
+        assert not lib.are_homographs("cat", "dog")
+
+    def test_are_homonyms_unrelated_is_false(self, lib):
+        assert not lib.are_homonyms("cat", "dog")
+
+    def test_get_homographs_curated_and_unknown(self, lib):
+        assert lib.get_homographs("lead") == {"lead"}
+        assert lib.get_homographs("zzqxnonsense") == set()
+
+    def test_get_homophones_unknown_is_empty(self, lib):
+        assert lib.get_homophones("zzqxnonsense") == set()
+
+    def test_get_all_homonyms_structure(self, lib):
+        result = lib.get_all_homonyms("bat")
+        assert result["homographs"] == {"bat"}
+        assert "bat" not in result["homophones"]  # excludes self
+        assert result["all"] == result["homographs"] | result["homophones"]
+
+    def test_add_homograph_group_duplicate_is_noop(self):
+        lib = HomonymsLibrary()
+        assert lib.add_homograph_group(["zzz"])
+        before = len(lib.homograph_groups)
+        assert not lib.add_homograph_group(["ZZZ"])  # same set, no-op
+        assert len(lib.homograph_groups) == before
+
+    def test_statistics_has_all_keys(self, lib):
+        assert set(lib.get_statistics()) == {
+            "homograph_groups",
+            "homophone_groups",
+            "total_homographic_words",
+            "total_homophonic_words",
+            "phonetic_fallback_enabled",
+        }
 
 
 @pytest.mark.skipif(not phonetics.available(), reason="cmudict not installed")

@@ -409,18 +409,36 @@ class HomonymsLibrary:
     def _build_reverse_index(
         self, groups: list[set[str]], keep_identical: bool = False
     ) -> dict[str, set[str]]:
-        """Build a reverse index from each word to its homonym group."""
+        """Build a reverse index from each word to its homonym group.
+
+        Raises:
+            TypeError: If ``keep_identical`` is not a ``bool``, ``groups`` is a
+                ``str``/``bytes``, or a group contains a non-``str``.
+        """
+        if not isinstance(keep_identical, bool):
+            raise TypeError(
+                "keep_identical must be a bool, got %r" % (keep_identical,)
+            )
+        if isinstance(groups, (str, bytes)):
+            raise TypeError(
+                "groups must be an iterable of sets of str, got %r"
+                % (groups,)
+            )
         index: dict[str, set[str]] = defaultdict(set)
-
         for group in groups:
+            lowered_group: set[str] = set()
             for word in group:
-                lowered_word = word.lower()
+                if not isinstance(word, str):
+                    raise TypeError(
+                        "groups must contain only str, got %r" % (word,)
+                    )
+                lowered_group.add(word.lower())
+            for lowered_word in lowered_group:
                 index[lowered_word].update(
-                    member.lower()
-                    for member in group
-                    if keep_identical or member.lower() != lowered_word
+                    member
+                    for member in lowered_group
+                    if keep_identical or member != lowered_word
                 )
-
         return dict(index)
 
     def _clean_word(self, word: str, parameter: str = "word") -> str:
@@ -487,11 +505,6 @@ class HomonymsLibrary:
         """
         cleaned_word1 = self._clean_word(word1, "word1")
         cleaned_word2 = self._clean_word(word2, "word2")
-        return self._are_homographs(cleaned_word1, cleaned_word2)
-
-    def _are_homographs(
-        self, cleaned_word1: str, cleaned_word2: str
-    ) -> bool:
         # A word spelled like another could simply be the same word, so equal
         # spelling is required but not sufficient.
         if cleaned_word1 != cleaned_word2:
@@ -519,11 +532,6 @@ class HomonymsLibrary:
         """
         cleaned_word1 = self._clean_word(word1, "word1")
         cleaned_word2 = self._clean_word(word2, "word2")
-        return self._are_homophones(cleaned_word1, cleaned_word2)
-
-    def _are_homophones(
-        self, cleaned_word1: str, cleaned_word2: str
-    ) -> bool:
         # Same spelling is only a homophone relationship for curated
         # same-spelling homonyms (e.g. "bat"); a word is not otherwise a
         # homophone of itself, and phonetics alone cannot tell two meanings of
@@ -549,11 +557,13 @@ class HomonymsLibrary:
             TypeError: If either argument is not a ``str``.
             ValueError: If either argument has no non-whitespace characters.
         """
-        cleaned_word1 = self._clean_word(word1, "word1")
-        cleaned_word2 = self._clean_word(word2, "word2")
-        return self._are_homographs(
-            cleaned_word1, cleaned_word2
-        ) or self._are_homophones(cleaned_word1, cleaned_word2)
+        # Validate this function's own parameters; never rely solely on the
+        # delegated calls having done so.
+        self._clean_word(word1, "word1")
+        self._clean_word(word2, "word2")
+        return self.are_homographs(word1, word2) or self.are_homophones(
+            word1, word2
+        )
 
     def classify(self, word1: str, word2: str) -> MatchType:
         """Classify how two words relate, returning a :class:`MatchType`.
@@ -576,12 +586,8 @@ class HomonymsLibrary:
         cleaned_word1 = self._clean_word(word1, "word1")
         cleaned_word2 = self._clean_word(word2, "word2")
 
-        is_homograph: bool = self._are_homographs(
-            cleaned_word1, cleaned_word2
-        )
-        is_homophone: bool = self._are_homophones(
-            cleaned_word1, cleaned_word2
-        )
+        is_homograph: bool = self.are_homographs(word1, word2)
+        is_homophone: bool = self.are_homophones(word1, word2)
 
         if is_homograph and is_homophone:
             return MatchType.HOMONYM
@@ -618,9 +624,6 @@ class HomonymsLibrary:
             ValueError: If ``word`` has no non-whitespace characters.
         """
         cleaned_word = self._clean_word(word)
-        return self._get_homographs(cleaned_word)
-
-    def _get_homographs(self, cleaned_word: str) -> set[str]:
         return self.word_to_homographs.get(cleaned_word, set())
 
     def get_homophones(self, word: str) -> set[str]:
@@ -637,9 +640,6 @@ class HomonymsLibrary:
             ValueError: If ``word`` has no non-whitespace characters.
         """
         cleaned_word = self._clean_word(word)
-        return self._get_homophones(cleaned_word)
-
-    def _get_homophones(self, cleaned_word: str) -> set[str]:
         curated: set[str] = self.word_to_homophones.get(cleaned_word, set())
         # Curated cache is authoritative and fast; only fall back to cmudict
         # (which loads its dictionary) for words the cache does not cover.
@@ -663,9 +663,9 @@ class HomonymsLibrary:
             TypeError: If ``word`` is not a ``str``.
             ValueError: If ``word`` has no non-whitespace characters.
         """
-        cleaned_word = self._clean_word(word)
-        homographs: set[str] = self._get_homographs(cleaned_word)
-        homophones: set[str] = self._get_homophones(cleaned_word)
+        self._clean_word(word)  # validate this function's own parameter
+        homographs: set[str] = self.get_homographs(word)
+        homophones: set[str] = self.get_homophones(word)
         combined: set[str] = homographs.union(homophones)
         return {
             "homographs": homographs,
@@ -676,9 +676,28 @@ class HomonymsLibrary:
     def _index_group(
         self, index: dict[str, set[str]], group: set[str]
     ) -> None:
-        """Add one group to a reverse index in place (keep_identical)."""
+        """Add one group to a reverse index in place.
+
+        Raises:
+            TypeError: If ``index`` is not a ``dict``, ``group`` is a
+                ``str``/``bytes``, or ``group`` contains a non-``str``.
+        """
+        if not isinstance(index, dict):
+            raise TypeError("index must be a dict, got %r" % (index,))
+        if isinstance(group, (str, bytes)):
+            raise TypeError(
+                "group must be an iterable of str, not a str, got %r"
+                % (group,)
+            )
+        members: set[str] = set()
         for word in group:
-            index.setdefault(word, set()).update(group)
+            if not isinstance(word, str):
+                raise TypeError(
+                    "group must contain only str, got %r" % (word,)
+                )
+            members.add(word)
+        for word in members:
+            index.setdefault(word, set()).update(members)
 
     def add_homophone_group(self, words: Iterable[str]) -> bool:
         """Register a new homophone group (words that sound alike).
