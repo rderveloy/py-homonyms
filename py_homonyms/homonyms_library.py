@@ -47,6 +47,14 @@ class HomonymsLibrary:
         self.word_to_homophones: Dict[str, Set[str]] = self._build_reverse_index(
             self.homophone_groups, keep_identical=True
         )
+        # Words that are homophones of themselves: same spelling, same sound,
+        # different meaning (e.g. "bat"). These appear as single-member groups.
+        self.same_spelling_homophones: Set[str] = {
+            word.lower()
+            for group in self.homophone_groups
+            if len({w.lower() for w in group}) == 1
+            for word in group
+        }
 
     def _load_homographs(self) -> List[Set[str]]:
         """
@@ -79,6 +87,21 @@ class HomonymsLibrary:
             {"tear", "tear"},  # to rip vs from crying
             {"wind", "wind"},  # air movement vs to turn
             {"wound", "wound"},  # injury vs past tense of wind
+            {"address", "address"},  # location vs to speak to
+            {"console", "console"},  # to comfort vs a control panel
+            {"content", "content"},  # satisfied vs subject matter
+            {"contract", "contract"},  # agreement vs to shrink
+            {"convict", "convict"},  # to find guilty vs a prisoner
+            {"desert", "desert"},  # arid land vs to abandon
+            {"does", "does"},  # verb vs plural of doe
+            {"entrance", "entrance"},  # doorway vs to delight
+            {"insult", "insult"},  # to offend vs an offense
+            {"invalid", "invalid"},  # not valid vs a sick person
+            {"permit", "permit"},  # to allow vs a license
+            {"polish", "polish"},  # to shine vs from Poland
+            {"rebel", "rebel"},  # to resist vs a resister
+            {"row", "row"},  # to paddle vs an argument
+            {"sow", "sow"},  # to plant vs a female pig
         ]
         return homographs
 
@@ -143,6 +166,57 @@ class HomonymsLibrary:
             {"threw", "through"},
             {"tied", "tide"},
             {"waste", "waist"},
+            {"aloud", "allowed"},
+            {"ant", "aunt"},
+            {"bare", "bear"},
+            {"beat", "beet"},
+            {"berry", "bury"},
+            {"blew", "blue"},
+            {"board", "bored"},
+            {"bread", "bred"},
+            {"capital", "capitol"},
+            {"cereal", "serial"},
+            {"chord", "cord"},
+            {"coarse", "course"},
+            {"creak", "creek"},
+            {"die", "dye"},
+            {"fairy", "ferry"},
+            {"feat", "feet"},
+            {"find", "fined"},
+            {"flew", "flu", "flue"},
+            {"gene", "jean"},
+            {"hair", "hare"},
+            {"hall", "haul"},
+            {"heard", "herd"},
+            {"hoarse", "horse"},
+            {"hour", "our"},
+            {"idle", "idol"},
+            {"knot", "not"},
+            {"lessen", "lesson"},
+            {"loan", "lone"},
+            {"made", "maid"},
+            {"main", "mane"},
+            {"medal", "meddle"},
+            {"morning", "mourning"},
+            {"none", "nun"},
+            {"oar", "or", "ore"},
+            {"pause", "paws"},
+            {"peak", "peek"},
+            {"pedal", "peddle"},
+            {"pray", "prey"},
+            {"profit", "prophet"},
+            {"rap", "wrap"},
+            {"real", "reel"},
+            {"seam", "seem"},
+            {"sole", "soul"},
+            {"stair", "stare"},
+            {"stationary", "stationery"},
+            {"toad", "towed"},
+            {"vain", "vein", "vane"},
+            {"way", "weigh"},
+            {"which", "witch"},
+            {"whine", "wine"},
+            {"who's", "whose"},
         ]
 
         return homophones
@@ -202,16 +276,17 @@ class HomonymsLibrary:
 
         cleaned_word1, cleaned_word2 = word1.lower().strip(), word2.lower().strip()
 
+        # Same spelling is only a homophone relationship for curated same-spelling
+        # homonyms (e.g. "bat"); a word is not otherwise a homophone of itself, and
+        # phonetics alone cannot tell two meanings of one spelling apart.
+        if cleaned_word1 == cleaned_word2:
+            return cleaned_word1 in self.same_spelling_homophones
+
         if cleaned_word2 in self.word_to_homophones.get(cleaned_word1, set()):
             return True
 
-        # Fallback: words with different spellings that share a pronunciation are
-        # homophones. Same-spelling cases stay curated-only because phonetics
-        # alone cannot tell two meanings apart.
-        if cleaned_word1 != cleaned_word2:
-            return phonetics.sound_alike(cleaned_word1, cleaned_word2)
-
-        return False
+        # Fallback: different-spelled words that share a pronunciation are homophones.
+        return phonetics.sound_alike(cleaned_word1, cleaned_word2)
 
     def are_homonyms(self, word1: str, word2: str) -> bool:
         """
@@ -285,7 +360,12 @@ class HomonymsLibrary:
             Set of homophones (empty set if none found)
         """
         cleaned_word = word.lower().strip()
-        result: Set[str] = self.word_to_homophones.get(cleaned_word, set())
+        result: Set[str] = set(self.word_to_homophones.get(cleaned_word, set()))
+
+        # Fallback: add words that sound alike but are not in the curated cache.
+        result |= phonetics.homophones(cleaned_word)
+
+        result.discard(cleaned_word)
         return result
 
     def get_all_homonyms(self, word: str) -> Dict[str, Set[str]]:
@@ -325,6 +405,7 @@ class HomonymsLibrary:
             "homophone_groups": len(self.homophone_groups),
             "total_homographic_words": len(self.word_to_homographs),
             "total_homophonic_words": len(self.word_to_homophones),
+            "phonetic_fallback_enabled": int(phonetics.available()),
         }
 
         return result

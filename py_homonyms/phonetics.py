@@ -9,6 +9,7 @@ the library falls back to curated results only.
 
 from __future__ import annotations
 
+from collections import defaultdict
 from functools import lru_cache
 
 try:
@@ -45,3 +46,27 @@ def sound_alike(word1: str, word2: str) -> bool:
     if not p1:
         return False
     return bool(p1 & pronunciations(word2))
+
+
+@lru_cache(maxsize=1)
+def _reverse_index() -> dict[Pronunciation, set[str]]:
+    """Map each pronunciation to the set of words that have it (built once)."""
+    index: dict[Pronunciation, set[str]] = defaultdict(set)
+    for word, entries in _dictionary().items():
+        for phonemes in entries:
+            index[tuple(phonemes)].add(word)
+    return index
+
+
+def homophones(word: str) -> set[str]:
+    """Return words that share a pronunciation with ``word`` (excluding itself).
+
+    Empty if ``word`` is unknown or cmudict is unavailable.
+    """
+    cleaned = word.strip().lower()
+    index = _reverse_index()
+    result: set[str] = set()
+    for pron in pronunciations(cleaned):
+        result |= index.get(pron, set())
+    result.discard(cleaned)
+    return result

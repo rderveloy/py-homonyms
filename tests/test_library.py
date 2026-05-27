@@ -38,6 +38,33 @@ def test_classify(lib):
     assert lib.classify("zzqx", "qxzz") == MatchType.UNKNOWN
 
 
+def test_word_is_not_its_own_homophone(lib):
+    # A plain curated word is not a homophone of itself; only same-spelling
+    # homonyms (e.g. "bat") are.
+    assert not lib.are_homophones("flower", "flower")
+    assert not lib.are_homophones("to", "to")
+    assert lib.are_homophones("bat", "bat")
+
+
+def test_extended_curated_data(lib):
+    assert lib.are_homophones("ant", "aunt")
+    assert lib.are_homophones("vain", "vein")
+    assert lib.are_homographs("desert", "desert")
+    assert lib.classify("desert", "desert") == MatchType.HOMOGRAPH
+
+
+def test_get_homophones_excludes_self(lib):
+    result = lib.get_homophones("to")
+    assert "two" in result and "too" in result
+    assert "to" not in result
+
+
+def test_get_statistics_reports_fallback(lib):
+    stats = lib.get_statistics()
+    assert "phonetic_fallback_enabled" in stats
+    assert stats["homophone_groups"] > 50
+
+
 @pytest.mark.skipif(not phonetics.available(), reason="cmudict not installed")
 class TestCmudictFallback:
     def test_homophone_not_in_cache(self, lib):
@@ -52,3 +79,8 @@ class TestCmudictFallback:
 
     def test_fallback_classifies_homophone(self, lib):
         assert lib.classify("knew", "new") == MatchType.HOMOPHONE
+
+    def test_getter_uses_fallback(self, lib):
+        # "knew" is not curated, but cmudict knows it sounds like "new".
+        assert "knew" not in lib.word_to_homophones
+        assert "new" in lib.get_homophones("knew")
