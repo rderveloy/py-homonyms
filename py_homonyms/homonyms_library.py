@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import enum
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
+from types import MappingProxyType
 
 from . import phonetics
 
@@ -47,26 +48,65 @@ class HomonymsLibrary:
     """
 
     def __init__(self) -> None:
-        self.homograph_groups: list[set[str]] = self._load_homographs()
-        self.homophone_groups: list[set[str]] = self._load_homophones()
-        self.word_to_homographs: dict[str, set[str]] = (
+        # The backing store is private and mutable: only our own methods (the
+        # mutators and warm) write to it. External callers reach it through the
+        # read-only properties below, which hand out independent snapshots so a
+        # caller's mistake cannot corrupt the library's state.
+        self._homograph_groups: list[set[str]] = self._load_homographs()
+        self._homophone_groups: list[set[str]] = self._load_homophones()
+        self._word_to_homographs: dict[str, set[str]] = (
             self._build_reverse_index(
-                self.homograph_groups, keep_identical=True
+                self._homograph_groups, keep_identical=True
             )
         )
-        self.word_to_homophones: dict[str, set[str]] = (
+        self._word_to_homophones: dict[str, set[str]] = (
             self._build_reverse_index(
-                self.homophone_groups, keep_identical=True
+                self._homophone_groups, keep_identical=True
             )
         )
         # Words that are homophones of themselves: same spelling, same sound,
         # different meaning (e.g. "bat"). These appear as single-member groups.
-        self.same_spelling_homophones: set[str] = {
+        self._same_spelling_homophones: set[str] = {
             word.lower()
-            for group in self.homophone_groups
+            for group in self._homophone_groups
             if len({member.lower() for member in group}) == 1
             for word in group
         }
+
+    @property
+    def homograph_groups(self) -> list[set[str]]:
+        """Read-only snapshot of the homograph groups."""
+        return [set(group) for group in self._homograph_groups]
+
+    @property
+    def homophone_groups(self) -> list[set[str]]:
+        """Read-only snapshot of the homophone groups."""
+        return [set(group) for group in self._homophone_groups]
+
+    @property
+    def word_to_homographs(self) -> Mapping[str, set[str]]:
+        """Read-only snapshot mapping each word to its homograph group."""
+        return MappingProxyType(
+            {
+                word: set(group)
+                for word, group in self._word_to_homographs.items()
+            }
+        )
+
+    @property
+    def word_to_homophones(self) -> Mapping[str, set[str]]:
+        """Read-only snapshot mapping each word to its homophone group."""
+        return MappingProxyType(
+            {
+                word: set(group)
+                for word, group in self._word_to_homophones.items()
+            }
+        )
+
+    @property
+    def same_spelling_homophones(self) -> frozenset[str]:
+        """Read-only snapshot of the same-spelling homonyms."""
+        return frozenset(self._same_spelling_homophones)
 
     def _load_homographs(self) -> list[set[str]]:
         """Load homograph groups (words with the same spelling but
@@ -518,7 +558,7 @@ class HomonymsLibrary:
         # spelling is required but not sufficient.
         if cleaned_word1 != cleaned_word2:
             return False
-        if cleaned_word1 in self.word_to_homographs:
+        if cleaned_word1 in self._word_to_homographs:
             return True
         # Fallback: a word with more than one pronunciation (a heteronym, e.g.
         # "lead"/"read") is a homograph even when not in the curated cache.
@@ -546,8 +586,8 @@ class HomonymsLibrary:
         # homophone of itself, and phonetics alone cannot tell two meanings of
         # one spelling apart.
         if cleaned_word1 == cleaned_word2:
-            return cleaned_word1 in self.same_spelling_homophones
-        if cleaned_word2 in self.word_to_homophones.get(cleaned_word1, set()):
+            return cleaned_word1 in self._same_spelling_homophones
+        if cleaned_word2 in self._word_to_homophones.get(cleaned_word1, set()):
             return True
         # Fallback: different-spelled words that share a pronunciation.
         return phonetics.sound_alike(cleaned_word1, cleaned_word2)
@@ -606,13 +646,13 @@ class HomonymsLibrary:
             return MatchType.HOMOPHONE
 
         first_is_known: bool = (
-            cleaned_word1 in self.word_to_homophones
-            or cleaned_word1 in self.word_to_homographs
+            cleaned_word1 in self._word_to_homophones
+            or cleaned_word1 in self._word_to_homographs
             or bool(phonetics.pronunciations(cleaned_word1))
         )
         second_is_known: bool = (
-            cleaned_word2 in self.word_to_homophones
-            or cleaned_word2 in self.word_to_homographs
+            cleaned_word2 in self._word_to_homophones
+            or cleaned_word2 in self._word_to_homographs
             or bool(phonetics.pronunciations(cleaned_word2))
         )
         if first_is_known and second_is_known:
@@ -633,7 +673,9 @@ class HomonymsLibrary:
             ValueError: If ``word`` has no non-whitespace characters.
         """
         cleaned_word = self._clean_word(word)
-        return self.word_to_homographs.get(cleaned_word, set())
+        # Return a copy, never the live internal set: a caller mutating the
+        # result must not be able to corrupt the reverse index.
+        return set(self._word_to_homographs.get(cleaned_word, set()))
 
     def get_homophones(self, word: str) -> set[str]:
         """Get all homophones for a given word.
@@ -649,7 +691,7 @@ class HomonymsLibrary:
             ValueError: If ``word`` has no non-whitespace characters.
         """
         cleaned_word = self._clean_word(word)
-        curated: set[str] = self.word_to_homophones.get(cleaned_word, set())
+        curated: set[str] = self._word_to_homophones.get(cleaned_word, set())
         # Curated cache is authoritative and fast; only fall back to cmudict
         # (which loads its dictionary) for words the cache does not cover.
         result: set[str] = (
@@ -727,12 +769,12 @@ class HomonymsLibrary:
             ValueError: If no word has a non-whitespace character.
         """
         group = self._clean_group(words)
-        if group in self.homophone_groups:
+        if group in self._homophone_groups:
             return False
-        self.homophone_groups.append(group)
-        self._index_group(self.word_to_homophones, group)
+        self._homophone_groups.append(group)
+        self._index_group(self._word_to_homophones, group)
         if len(group) == 1:
-            self.same_spelling_homophones.update(group)
+            self._same_spelling_homophones.update(group)
         return True
 
     def add_homograph_group(self, words: Iterable[str]) -> bool:
@@ -750,10 +792,10 @@ class HomonymsLibrary:
             ValueError: If no word has a non-whitespace character.
         """
         group = self._clean_group(words)
-        if group in self.homograph_groups:
+        if group in self._homograph_groups:
             return False
-        self.homograph_groups.append(group)
-        self._index_group(self.word_to_homographs, group)
+        self._homograph_groups.append(group)
+        self._index_group(self._word_to_homographs, group)
         return True
 
     def warm(self, word: str) -> dict[str, set[str]]:
@@ -782,7 +824,7 @@ class HomonymsLibrary:
             "homographs": set(),
         }
 
-        if cleaned_word not in self.word_to_homophones:
+        if cleaned_word not in self._word_to_homophones:
             partners = phonetics.homophones(cleaned_word)
             # Only multi-spelling groups are valid homophones; a lone word
             # would be wrongly recorded as a same-spelling homonym.
@@ -791,7 +833,7 @@ class HomonymsLibrary:
             ):
                 promoted["homophones"] = partners
 
-        if cleaned_word not in self.word_to_homographs:
+        if cleaned_word not in self._word_to_homographs:
             has_multiple_pronunciations = (
                 len(phonetics.pronunciations(cleaned_word)) > 1
             )
@@ -805,10 +847,10 @@ class HomonymsLibrary:
     def get_statistics(self) -> dict[str, int]:
         """Get statistics about the loaded homonym data."""
         return {
-            "homograph_groups": len(self.homograph_groups),
-            "homophone_groups": len(self.homophone_groups),
-            "total_homographic_words": len(self.word_to_homographs),
-            "total_homophonic_words": len(self.word_to_homophones),
+            "homograph_groups": len(self._homograph_groups),
+            "homophone_groups": len(self._homophone_groups),
+            "total_homographic_words": len(self._word_to_homographs),
+            "total_homophonic_words": len(self._word_to_homophones),
             "phonetic_fallback_enabled": int(phonetics.available()),
         }
 

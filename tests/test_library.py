@@ -292,6 +292,45 @@ class TestExecutionPaths:
         }
 
 
+class TestEncapsulation:
+    def test_get_homographs_returns_defensive_copy(self, lib):
+        first = lib.get_homographs("lead")
+        first.add("intruder")
+        assert "intruder" not in lib.get_homographs("lead")
+
+    def test_get_homophones_returns_defensive_copy(self, lib):
+        first = lib.get_homophones("to")
+        first.add("intruder")
+        assert "intruder" not in lib.get_homophones("to")
+
+    def test_word_index_is_read_only_mapping(self, lib):
+        with pytest.raises(TypeError):
+            lib.word_to_homographs["lead"] = {"x"}
+
+    def test_word_index_value_is_a_snapshot(self, lib):
+        snapshot = lib.word_to_homophones["to"]
+        snapshot.add("intruder")
+        assert "intruder" not in lib.word_to_homophones["to"]
+
+    def test_groups_snapshot_is_independent(self, lib):
+        groups = lib.homophone_groups
+        count = len(groups)
+        groups.append({"bogus"})
+        groups[0].add("bogus")
+        assert len(lib.homophone_groups) == count
+        assert all("bogus" not in group for group in lib.homophone_groups)
+
+    def test_same_spelling_is_frozen(self, lib):
+        with pytest.raises(AttributeError):
+            lib.same_spelling_homophones.add("intruder")
+
+    def test_additions_still_work_through_mutators(self, lib):
+        # Encapsulation must not block the sanctioned write path.
+        local = HomonymsLibrary()
+        assert local.add_homophone_group(["foo", "bar"])
+        assert local.are_homophones("foo", "bar")
+
+
 @pytest.mark.skipif(not phonetics.available(), reason="cmudict not installed")
 class TestWarm:
     def test_warm_promotes_homophones_into_cache(self):

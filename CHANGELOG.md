@@ -18,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Substantially expanded curated data: homophone groups 104 -> 227 and
   homograph groups 39 -> 84.
 
+### Changed
+- Input is now validated in every callable function we author: `TypeError` for
+  non-`str` (or otherwise wrong-typed) arguments and `ValueError` for blank or
+  empty values, documented per method.
+- The group/index attributes (`homograph_groups`, `homophone_groups`,
+  `word_to_homographs`, `word_to_homophones`, `same_spelling_homophones`) are
+  now read-only snapshot properties backed by private state; mutate the library
+  only through `add_homophone_group()`, `add_homograph_group()`, and `warm()`.
+- `get_homographs()` returns a defensive copy so a caller mutating the result
+  cannot corrupt the internal reverse index.
+
 ## [0.1]
 
 ### Added
