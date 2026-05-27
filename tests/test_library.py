@@ -74,19 +74,19 @@ def test_get_statistics_reports_fallback(lib):
 @pytest.mark.skipif(not phonetics.available(), reason="cmudict not installed")
 class TestCmudictFallback:
     def test_homophone_not_in_cache(self, lib):
-        # "knew"/"new" are not in the curated homophone groups.
-        assert "knew" not in lib.word_to_homophones
-        assert lib.are_homophones("knew", "new")
+        # "moose"/"mousse" are not in the curated homophone groups.
+        assert "moose" not in lib.word_to_homophones
+        assert lib.are_homophones("moose", "mousse")
 
     def test_homograph_not_in_cache(self, lib):
-        # "bass" sounds two ways (fish vs. the instrument) but isn't curated here.
-        assert "bass" not in lib.word_to_homographs
-        assert lib.are_homographs("bass", "bass")
+        # "moped" sounds two ways (the vehicle vs. past tense of mope) but isn't curated here.
+        assert "moped" not in lib.word_to_homographs
+        assert lib.are_homographs("moped", "moped")
 
     def test_fallback_classifies_homophone(self, lib):
-        assert lib.classify("knew", "new") == MatchType.HOMOPHONE
+        assert lib.classify("moose", "mousse") == MatchType.HOMOPHONE
 
     def test_getter_uses_fallback(self, lib):
-        # "knew" is not curated, but cmudict knows it sounds like "new".
-        assert "knew" not in lib.word_to_homophones
-        assert "new" in lib.get_homophones("knew")
+        # "moose" is not curated, but cmudict knows it sounds like "mousse".
+        assert "moose" not in lib.word_to_homophones
+        assert "mousse" in lib.get_homophones("moose")

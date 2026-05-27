@@ -102,6 +102,51 @@ class HomonymsLibrary:
             {"rebel", "rebel"},  # to resist vs a resister
             {"row", "row"},  # to paddle vs an argument
             {"sow", "sow"},  # to plant vs a female pig
+            {"bass", "bass"},  # fish vs the instrument
+            {"abuse", "abuse"},  # noun vs verb
+            {"attribute", "attribute"},  # a quality vs to ascribe
+            {"buffet", "buffet"},  # a meal vs to strike
+            {"compound", "compound"},  # an enclosure vs to combine
+            {"conduct", "conduct"},  # behavior vs to lead
+            {"conflict", "conflict"},  # a dispute vs to clash
+            {"contest", "contest"},  # a competition vs to dispute
+            {"contrast", "contrast"},  # a difference vs to differ
+            {"converse", "converse"},  # the opposite vs to talk
+            {"convert", "convert"},  # a believer vs to change
+            {"digest", "digest"},  # a summary vs to break down
+            {"escort", "escort"},  # a companion vs to accompany
+            {"excuse", "excuse"},  # a reason vs to forgive
+            {"export", "export"},  # a good shipped vs to ship out
+            {"extract", "extract"},  # an excerpt vs to remove
+            {"import", "import"},  # a good brought in vs to bring in
+            {"incline", "incline"},  # a slope vs to lean
+            {"increase", "increase"},  # a rise vs to grow
+            {"insert", "insert"},  # an addition vs to put in
+            {"intern", "intern"},  # a trainee vs to confine
+            {"misuse", "misuse"},  # wrong use vs to use wrongly
+            {"number", "number"},  # a numeral vs more numb
+            {"progress", "progress"},  # advancement vs to advance
+            {"protest", "protest"},  # a demonstration vs to object
+            {"recall", "recall"},  # memory vs to remember
+            {"refund", "refund"},  # money returned vs to return money
+            {"reject", "reject"},  # a discard vs to refuse
+            {"sewer", "sewer"},  # a drain vs one who sews
+            {"survey", "survey"},  # a poll vs to examine
+            {"suspect", "suspect"},  # a person vs to doubt
+            {"transfer", "transfer"},  # a move vs to move
+            {"transport", "transport"},  # conveyance vs to carry
+            {"upset", "upset"},  # a disturbance vs to overturn
+            {"use", "use"},  # a purpose vs to employ
+            {"moderate", "moderate"},  # not extreme vs to chair
+            {"separate", "separate"},  # apart vs to divide
+            {"estimate", "estimate"},  # a guess vs to approximate
+            {"graduate", "graduate"},  # an alum vs to complete a degree
+            {"associate", "associate"},  # a colleague vs to connect
+            {"alternate", "alternate"},  # every other vs to take turns
+            {"duplicate", "duplicate"},  # a copy vs to copy
+            {"delegate", "delegate"},  # a representative vs to assign
+            {"deliberate", "deliberate"},  # intentional vs to ponder
+            {"intimate", "intimate"},  # close vs to hint
         ]
         return homographs
 
@@ -217,6 +262,129 @@ class HomonymsLibrary:
             {"which", "witch"},
             {"whine", "wine"},
             {"who's", "whose"},
+            {"ad", "add"},
+            {"ail", "ale"},
+            {"air", "heir"},
+            {"aisle", "isle", "i'll"},
+            {"altar", "alter"},
+            {"arc", "ark"},
+            {"ascent", "assent"},
+            {"aye", "eye", "i"},
+            {"bail", "bale"},
+            {"ball", "bawl"},
+            {"band", "banned"},
+            {"baron", "barren"},
+            {"base", "bass"},
+            {"be", "bee"},
+            {"beach", "beech"},
+            {"berth", "birth"},
+            {"billed", "build"},
+            {"boar", "bore"},
+            {"bold", "bowled"},
+            {"bolder", "boulder"},
+            {"born", "borne"},
+            {"bough", "bow"},
+            {"bridal", "bridle"},
+            {"but", "butt"},
+            {"cache", "cash"},
+            {"ceiling", "sealing"},
+            {"cellar", "seller"},
+            {"chili", "chilly"},
+            {"choral", "coral"},
+            {"chews", "choose"},
+            {"complement", "compliment"},
+            {"council", "counsel"},
+            {"cue", "queue"},
+            {"currant", "current"},
+            {"cymbal", "symbol"},
+            {"days", "daze"},
+            {"dew", "do", "due"},
+            {"discreet", "discrete"},
+            {"doe", "dough"},
+            {"done", "dun"},
+            {"dual", "duel"},
+            {"earn", "urn"},
+            {"ewe", "you", "yew"},
+            {"faint", "feint"},
+            {"fir", "fur"},
+            {"flair", "flare"},
+            {"foul", "fowl"},
+            {"gait", "gate"},
+            {"gilt", "guilt"},
+            {"gorilla", "guerrilla"},
+            {"great", "grate"},
+            {"guessed", "guest"},
+            {"hangar", "hanger"},
+            {"hay", "hey"},
+            {"higher", "hire"},
+            {"him", "hymn"},
+            {"hoard", "horde"},
+            {"holey", "holy", "wholly"},
+            {"in", "inn"},
+            {"its", "it's"},
+            {"knead", "need"},
+            {"knew", "new", "gnu"},
+            {"knows", "nose"},
+            {"leak", "leek"},
+            {"lie", "lye"},
+            {"links", "lynx"},
+            {"load", "lode"},
+            {"loot", "lute"},
+            {"maize", "maze"},
+            {"mall", "maul"},
+            {"mantel", "mantle"},
+            {"marshal", "martial"},
+            {"might", "mite"},
+            {"miner", "minor"},
+            {"missed", "mist"},
+            {"mustard", "mustered"},
+            {"naval", "navel"},
+            {"nay", "neigh"},
+            {"overdo", "overdue"},
+            {"paced", "paste"},
+            {"packed", "pact"},
+            {"patience", "patients"},
+            {"plum", "plumb"},
+            {"pole", "poll"},
+            {"poor", "pour", "pore"},
+            {"praise", "prays", "preys"},
+            {"presence", "presents"},
+            {"rack", "wrack"},
+            {"raise", "rays", "raze"},
+            {"read", "reed"},
+            {"read", "red"},
+            {"ring", "wring"},
+            {"rose", "rows"},
+            {"rote", "wrote"},
+            {"rye", "wry"},
+            {"scene", "seen"},
+            {"seas", "sees", "seize"},
+            {"sew", "so", "sow"},
+            {"side", "sighed"},
+            {"slay", "sleigh"},
+            {"soar", "sore"},
+            {"some", "sum"},
+            {"staid", "stayed"},
+            {"steak", "stake"},
+            {"straight", "strait"},
+            {"suite", "sweet"},
+            {"tacks", "tax"},
+            {"team", "teem"},
+            {"throne", "thrown"},
+            {"thyme", "time"},
+            {"toe", "tow"},
+            {"told", "tolled"},
+            {"tracked", "tract"},
+            {"wail", "wale", "whale"},
+            {"waive", "wave"},
+            {"ware", "wear", "where"},
+            {"warn", "worn"},
+            {"weather", "whether"},
+            {"weave", "we've"},
+            {"wet", "whet"},
+            {"yoke", "yolk"},
+            {"yore", "your", "you're"},
+            {"you'll", "yule"},
         ]
 
         return homophones
