@@ -90,3 +90,65 @@ class TestCmudictFallback:
         # "moose" is not curated, but cmudict knows it sounds like "mousse".
         assert "moose" not in lib.word_to_homophones
         assert "mousse" in lib.get_homophones("moose")
+
+
+class TestMutators:
+    def test_add_homophone_group(self):
+        lib = HomonymsLibrary()
+        assert lib.add_homophone_group(["Foo", " bar "])
+        assert lib.are_homophones("foo", "bar")
+        assert lib.get_homophones("foo") == {"bar"}
+
+    def test_add_homophone_group_singleton_is_same_spelling(self):
+        lib = HomonymsLibrary()
+        assert lib.add_homophone_group(["wug", "wug"])
+        assert "wug" in lib.same_spelling_homophones
+        assert lib.are_homophones("wug", "wug")
+
+    def test_add_homograph_group(self):
+        lib = HomonymsLibrary()
+        assert lib.add_homograph_group(["Wug"])
+        assert lib.are_homographs("wug", "wug")
+
+    def test_add_group_rejects_empty_and_duplicates(self):
+        lib = HomonymsLibrary()
+        assert not lib.add_homophone_group([])
+        assert not lib.add_homophone_group(["  "])
+        assert lib.add_homophone_group(["foo", "bar"])
+        before = len(lib.homophone_groups)
+        assert not lib.add_homophone_group(["bar", "foo"])  # same set, no-op
+        assert len(lib.homophone_groups) == before
+
+
+@pytest.mark.skipif(not phonetics.available(), reason="cmudict not installed")
+class TestWarm:
+    def test_warm_promotes_homophones_into_cache(self):
+        lib = HomonymsLibrary()
+        assert "moose" not in lib.word_to_homophones
+        promoted = lib.warm("moose")
+        assert "mousse" in promoted["homophones"]
+        # Now served from the curated path, not the fallback.
+        assert "moose" in lib.word_to_homophones
+        assert "mousse" in lib.get_homophones("moose")
+
+    def test_warm_promotes_heteronym_homograph(self):
+        lib = HomonymsLibrary()
+        assert "moped" not in lib.word_to_homographs
+        promoted = lib.warm("moped")
+        assert promoted["homographs"] == {"moped"}
+        assert "moped" in lib.word_to_homographs
+
+    def test_warm_is_idempotent(self):
+        lib = HomonymsLibrary()
+        lib.warm("moose")
+        groups_after_first = len(lib.homophone_groups)
+        second = lib.warm("moose")
+        assert second["homophones"] == set()
+        assert len(lib.homophone_groups) == groups_after_first
+
+    def test_warm_leaves_curated_word_untouched(self):
+        lib = HomonymsLibrary()
+        groups_before = len(lib.homophone_groups)
+        promoted = lib.warm("to")  # already curated
+        assert promoted["homophones"] == set()
+        assert len(lib.homophone_groups) == groups_before

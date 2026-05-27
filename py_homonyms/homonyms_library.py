@@ -560,11 +560,72 @@ class HomonymsLibrary:
 
         return result
 
-    # def add_homograph_group(self, words: List[str]) -> None:
-    #     pass
+    def _index_group(self, index: Dict[str, Set[str]], group: Set[str]) -> None:
+        """Add one group to a reverse index in place (keep_identical semantics)."""
+        for word in group:
+            index.setdefault(word, set()).update(group)
 
-    # def add_homophone_group(self, words: List[str]) -> None:
-    #     pass
+    def add_homophone_group(self, words: List[str]) -> bool:
+        """Register a new homophone group (words that sound alike).
+
+        Words are lower-cased and stripped. A group that collapses to a single
+        spelling is treated as a same-spelling homonym (like the curated
+        ``{"bat"}``). Returns ``True`` if the group was added, ``False`` if it
+        was empty or already present.
+        """
+        group = {w.lower().strip() for w in words if w and w.strip()}
+        if not group or group in self.homophone_groups:
+            return False
+        self.homophone_groups.append(group)
+        self._index_group(self.word_to_homophones, group)
+        if len(group) == 1:
+            self.same_spelling_homophones.update(group)
+        return True
+
+    def add_homograph_group(self, words: List[str]) -> bool:
+        """Register a new homograph group (words spelled the same).
+
+        Words are lower-cased and stripped. Returns ``True`` if the group was
+        added, ``False`` if it was empty or already present.
+        """
+        group = {w.lower().strip() for w in words if w and w.strip()}
+        if not group or group in self.homograph_groups:
+            return False
+        self.homograph_groups.append(group)
+        self._index_group(self.word_to_homographs, group)
+        return True
+
+    def warm(self, word: str) -> Dict[str, Set[str]]:
+        """Promote cmudict fallback results for ``word`` into the curated cache.
+
+        This is the opt-in counterpart to the read-only getters: rather than
+        having a lookup silently mutate shared state, callers ask for promotion
+        explicitly. After warming, future lookups for ``word`` (and any newly
+        linked homophones) hit the in-memory groups instead of the phonetic
+        fallback, and the pairs show up in :meth:`get_statistics`.
+
+        Returns the homophones/homographs that were newly promoted (empty sets
+        if the word was already cached or cmudict had nothing to add).
+        """
+        cleaned = word.lower().strip()
+        promoted: Dict[str, Set[str]] = {"homophones": set(), "homographs": set()}
+        if not cleaned:
+            return promoted
+
+        if cleaned not in self.word_to_homophones:
+            partners = phonetics.homophones(cleaned)
+            # Only multi-spelling groups are valid homophones; a lone word would
+            # be wrongly recorded as a same-spelling homonym.
+            if partners and self.add_homophone_group(partners | {cleaned}):
+                promoted["homophones"] = partners
+
+        if cleaned not in self.word_to_homographs:
+            if len(phonetics.pronunciations(cleaned)) > 1 and self.add_homograph_group(
+                {cleaned}
+            ):
+                promoted["homographs"] = {cleaned}
+
+        return promoted
 
     def get_statistics(self) -> Dict[str, int]:
         """Get statistics about the loaded homonym data"""
