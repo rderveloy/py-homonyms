@@ -14,6 +14,11 @@
       explain the *why* (rationale); the why is the floor and is never optional.
       Explaining the *what* in addition is welcome, but a comment that gives
       only the what, with no why, is insufficient.
+- [ ] CLAUDE.md: across ALL rules, examples must be either a complete list or
+      explicitly indicated as non-exhaustive (e.g. "non-exhaustive examples:",
+      "such as", "including but not limited to"). The existing rules (Naming,
+      Style, Type hints, Input validation, Testing) currently give "(e.g. ...)"
+      examples without flagging them as non-exhaustive — fix those too.
 - [ ] Make the mutator-managed backing fields name-mangled (double underscore,
       e.g. `__word_to_homophones`, `__word_to_homographs`, `__homophone_groups`,
       `__homograph_groups`, `__same_spelling_homophones`) so they are not
@@ -29,13 +34,15 @@
       Sphinx/IDEs though ignored at runtime), and a one-line note in the class
       docstring pointing callers to the properties + mutators.
 - [ ] CLAUDE.md: add a rule to follow the principles of *Clean Code* by Robert
-      C. Martin. Non-exhaustive examples: small functions that do one thing at a
-      single level of abstraction; meaningful, intention-revealing names;
-      minimal arguments (prefer 0-3, avoid flag args); command-query separation;
-      no side effects; DRY; prefer exceptions to error codes; no dead code;
-      leave code cleaner than you found it (boy-scout rule).
+      C. Martin. The rule text must explicitly flag its examples as
+      non-exhaustive. Examples (non-exhaustive): small functions that do one
+      thing at a single level of abstraction; meaningful, intention-revealing
+      names; minimal arguments (prefer 0-3, avoid flag args); command-query
+      separation; no side effects; DRY; prefer exceptions to error codes; no
+      dead code; leave code cleaner than you found it (boy-scout rule).
 - [ ] CLAUDE.md: add a separate rule to follow the principles of *Clean
-      Architecture* by Robert C. Martin. Non-exhaustive examples: separation of
+      Architecture* by Robert C. Martin. The rule text must explicitly flag its
+      examples as non-exhaustive. Examples (non-exhaustive): separation of
       concerns across boundaries; the dependency rule — source dependencies
       point inward toward higher-level policy/abstractions, never toward
       details; business logic independent of frameworks, UI, DB, and IO; depend
