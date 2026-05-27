@@ -28,3 +28,8 @@
       attribute docstrings (string literal after each assignment; surfaced by
       Sphinx/IDEs though ignored at runtime), and a one-line note in the class
       docstring pointing callers to the properties + mutators.
+- [ ] Follow the principles of Clean Code and Clean Architecture (Robert C.
+      Martin): small focused functions, meaningful names, minimal arguments, no
+      side effects/command-query separation, DRY, clear separation of concerns
+      and dependency direction (depend on abstractions, not details). Audit the
+      codebase against these and refactor where it falls short.
