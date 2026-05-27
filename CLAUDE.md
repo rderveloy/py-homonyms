@@ -18,13 +18,18 @@
   Python versions.
 
 ## Input validation
-- Validate inputs in every callable function — not just public API boundaries.
-  Python has no real access control: "private"/underscore-prefixed (and even
-  name-mangled `__dunder`) functions can still be called by external code, so
-  treat every reachable function as a boundary and validate its arguments.
-  Raise clear, specific exceptions rather than silently coercing, altering, or
-  producing nonsense. Sanitize, do not mutate: reject bad input instead of
-  "fixing" it.
+- Validate inputs in every function we author that is directly callable — not
+  just public API boundaries. Python has no real access control:
+  "private"/underscore-prefixed (and even name-mangled `__dunder`) methods can
+  still be called by external code, so validate all parameters of each such
+  function, including ones that only feed error messages. Raise clear, specific
+  exceptions rather than silently coercing, altering, or producing nonsense.
+  Sanitize, do not mutate: reject bad input instead of "fixing" it.
+- Scope is authorship and reachability: this applies only to functions we
+  write, never to third-party code we didn't (don't wrap or re-validate it).
+  Nested or anonymous functions that aren't reachable on their own — only
+  invoked through a named wrapper that already validates — need no validation
+  of their own.
 - Use `TypeError` for wrong argument types and `ValueError` for values that are
   the right type but unusable (e.g. a number string with no digit). Include the
   offending value in the message (via `%r`).

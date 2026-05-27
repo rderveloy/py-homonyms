@@ -445,9 +445,13 @@ class HomonymsLibrary:
         """Normalize and validate a single word argument.
 
         Raises:
-            TypeError: If ``word`` is not a ``str``.
+            TypeError: If ``parameter`` or ``word`` is not a ``str``.
             ValueError: If ``word`` has no non-whitespace characters.
         """
+        if not isinstance(parameter, str):
+            raise TypeError(
+                "parameter must be a str, got %r" % (parameter,)
+            )
         if not isinstance(word, str):
             raise TypeError("%s must be a str, got %r" % (parameter, word))
         cleaned_word = word.lower().strip()
@@ -464,9 +468,14 @@ class HomonymsLibrary:
         """Normalize and validate a group of words.
 
         Raises:
-            TypeError: If ``words`` is a ``str`` or contains a non-``str``.
+            TypeError: If ``parameter`` is not a ``str``, or ``words`` is a
+                ``str`` or contains a non-``str``.
             ValueError: If no word has a non-whitespace character.
         """
+        if not isinstance(parameter, str):
+            raise TypeError(
+                "parameter must be a str, got %r" % (parameter,)
+            )
         if isinstance(words, str):
             raise TypeError(
                 "%s must be an iterable of str, not a str, got %r"

@@ -222,6 +222,20 @@ class TestHostileGroupInput:
             lib.add_homograph_group(words)
 
 
+class TestCleanHelperParameterLabel:
+    # The helpers are directly callable methods we authored, so every
+    # parameter is validated, including the error-message label.
+    @pytest.mark.parametrize("bad", [123, None, b"word", ["word"]])
+    def test_clean_word_rejects_non_str_label(self, lib, bad):
+        with pytest.raises(TypeError):
+            lib._clean_word("to", bad)
+
+    @pytest.mark.parametrize("bad", [123, None, b"words", ["words"]])
+    def test_clean_group_rejects_non_str_label(self, lib, bad):
+        with pytest.raises(TypeError):
+            lib._clean_group(["foo", "bar"], bad)
+
+
 class TestRobustValidInput:
     @pytest.mark.parametrize("word", WEIRD_VALID_WORDS)
     def test_getters_handle_weird_but_valid(self, lib, word):
